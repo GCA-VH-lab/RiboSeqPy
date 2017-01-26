@@ -21,9 +21,11 @@ New analyses will be added soon.
 
     conda install cutadapt
           
-3) [hisat2](ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)   version 2.0.5 or higher
-   by default hisat2 trims bad quality ends what leads to uncorrect mapping of ribosome location.
-   From the version 2.0.5 there is an option to turn this behaivure off
+3) [hisat2](ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
+
+    version 2.0.5 or higher
+    Hisat2 trims ends of reads with bad quality. That leads to unprotect mapping of ribosome location.
+    From the version 2.0.5 there is an option to turn this behavior off
    
 4) [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 
