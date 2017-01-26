@@ -10,6 +10,7 @@ New analyses will be added soon.
 
 ### Prerequisite
 1) Python:
+
   Its ok to use system python but have you own local version gives more flexibility.
   I used Anaconda Python v.3.5(& 2.7) from [Continuum](https://www.continuum.io/downloads). It comes with a bunch of libraries and have a nice 
   package manager `conda`. Before conda is able to install bioinformatic libraries/programs you have
