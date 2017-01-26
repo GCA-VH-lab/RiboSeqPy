@@ -21,7 +21,7 @@ New analyses will be added soon.
 
     conda install cutadapt
           
-3) [hisat2](ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
+3) hisat2  (ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
 
     version 2.0.5 or higher
     Hisat2 trims ends of reads with bad quality. That leads to unprotect mapping of ribosome location.

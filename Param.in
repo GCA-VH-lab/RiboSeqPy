@@ -1,8 +1,8 @@
 # Start: 2
 # Stop:  8
 # 
-# \\  0 - Read parameters and do nothing
-# \\  1 - Download the data
+# \\  0 - Print parameters and do nothing
+# \\  1 - Download the data     # not_available!
 # \\  2 - Perform adapter trimming on downloaded FASTQ files
 # \\  3 - Perform quality filtering on trimmed FASTQ files
 # \\  4 - Remove sequences that align to non-coding RNAs from the filtered FASTQ files
@@ -10,7 +10,7 @@
 # \\  6 - Create Raw Assignment from the genome aligned sorted/indexed BAM file
 # \\  7 - Create Metagenomic tables
 # \\  8 - Create Metagenomic plots 
-# \\  9 - Corrected assignment
+# \\  9 - Corrected assignment  # not_available!
 #
 # Clean: rm
 # 
@@ -45,7 +45,7 @@
 # \\ rpm - use normalized data - reads per miljon (cpm)
 # \\ raw - raw counts
 #
+#
 #SRR0000002	MetS2
-
 
 SRR0000001	WTS1_
