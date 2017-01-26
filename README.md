@@ -39,9 +39,9 @@ From the version 2.0.5 there is an option to turn this behavior off.
 
 ### Additional data files
 
-  *Genome.fa  - genome sequence in FastA format
-  *ncRNA.fa   - non coding RNA in FastA format
-  *Genome.gtf - genome annotation in GTF (gff2) format
+  * Genome.fa  - genome sequence in FastA format
+  * ncRNA.fa   - non coding RNA in FastA format
+  * Genome.gtf - genome annotation in GTF (gff2) format
 
 Other data files are derived based on those three and commands for that are described in the file  build_index.sh
 
