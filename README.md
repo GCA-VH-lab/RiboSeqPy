@@ -24,7 +24,7 @@ New analyses will be added soon.
           
 3) HISAT2    ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads
 
-   version 2.0.5 or higher
+   _version 2.0.5_ or higher.
    Hisat2 trims ends of reads with bad quality. That leads to uncorrect mapping of ribosome location.
    From the version 2.0.5 there is an option to turn this behavior off.
    
