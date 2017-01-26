@@ -1,0 +1,51 @@
+# Start: 2
+# Stop:  8
+# 
+# \\  0 - Read parameters and do nothing
+# \\  1 - Download the data
+# \\  2 - Perform adapter trimming on downloaded FASTQ files
+# \\  3 - Perform quality filtering on trimmed FASTQ files
+# \\  4 - Remove sequences that align to non-coding RNAs from the filtered FASTQ files
+# \\  5 - Align sequences to the genome from the ncRNA subtracted FASTQ files
+# \\  6 - Create Raw Assignment from the genome aligned sorted/indexed BAM file
+# \\  7 - Create Metagenomic tables
+# \\  8 - Create Metagenomic plots 
+# \\  9 - Corrected assignment
+#
+# Clean: rm
+# 
+# \\ gzip  - Gzip files after they are no longer necessary
+# \\ rm    - Remove files after they are no longer necessary
+#
+# Quality: 0.90
+#
+# \\ Quality filter threshold for retaining reads (0.0 - 1.0). Higher is more selective.
+#
+# Mapping: 5
+#
+# \\ 5 - Map reads according to their 5' end
+# \\ 3 - Map reads according to their 3' end
+#
+# ReadLenMiN: 25
+# ReadLenMaX: 34
+#
+# \\ 26 - ReadLenMiN length of reads included -! going to replace Length 
+# \\ 33 - ReadLenMaX length of reads included -! going to replace Length
+#
+# MetagThreshold: 60
+#
+# \\ 30 - number of 5/3' mappings found around start or stop if less ignore a gene/region
+#
+# MetagSpan: 60
+#
+# \\ 60 - number of nucleotides before and after start/stop in metagenomic profile 
+#
+# Normalised: raw
+#
+# \\ rpm - use normalized data - reads per miljon (cpm)
+# \\ raw - raw counts
+#
+#SRR0000002	MetS2
+
+
+SRR0000001	WTS1_
