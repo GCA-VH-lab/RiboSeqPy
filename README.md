@@ -21,11 +21,11 @@ New analyses will be added soon.
 
     conda install cutadapt
           
-3) hisat2  (ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
+3) hisat2    ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads
 
-    version 2.0.5 or higher
-    Hisat2 trims ends of reads with bad quality. That leads to unprotect mapping of ribosome location.
-    From the version 2.0.5 there is an option to turn this behavior off
+version 2.0.5 or higher
+Hisat2 trims ends of reads with bad quality. That leads to unprotect mapping of ribosome location.
+From the version 2.0.5 there is an option to turn this behavior off.
    
 4) [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 
@@ -47,7 +47,7 @@ Other data files are derived based on those three and commands for that are desc
 Pipeline is controlled by parameters in the file "Param.in" You can specify steps you want to run, 
 readlength range, mapping (5' or 3'). 
 
-    python  Pipleine_iv.py
+    python  Pipeline_iv.py
 
 Logfiles are generated for each step and stored in Reports/ folder.
 
