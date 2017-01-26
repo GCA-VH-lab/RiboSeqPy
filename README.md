@@ -44,7 +44,10 @@ New analyses will be added soon.
   * ncRNA.fa   - non coding RNA in FastA format
   * Genome.gtf - genome annotation in GTF (gff2) format
 
-Other data files are derived based on those three and commands for that are described in the file  `build_index.sh`
+Other data files are derived based on those three and commands for that are described in the file  `build_index.sh`.
+_Saccharomyces cerevisiae_ genome, annotation, ncRNA and indexes are locating in the folder **0-References/**.
+Dummy dataset for testing purpose with 1 milj reads locates in the folder **1-Raw/**.
+
 
 ### Usage
 Pipeline is controlled by parameters in the file **Param.in**. You can specify steps you want to run,
@@ -58,5 +61,3 @@ Logfiles are generated for each step and stored in Reports/ folder.
 ### References
 Firs parts of the code and pipeline backbone is based on a code used in Radhakrishnan, A., et al. Cell (2016)
 https://github.com/greenlabjhmi/2016-Cell-Dhh1
-
-.
