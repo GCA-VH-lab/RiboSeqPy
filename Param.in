@@ -40,12 +40,11 @@
 #
 # \\ 60 - number of nucleotides before and after start/stop in metagenomic profile 
 #
-# Normalised: raw
+# Normalised: rpm
 #
 # \\ rpm - use normalized data - reads per miljon (cpm)
 # \\ raw - raw counts
 #
 #
-#SRR0000002	MetS2
 
 SRR0000001	WTS1_

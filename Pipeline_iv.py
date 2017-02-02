@@ -247,14 +247,26 @@ def qualityFilter(SRAList, Names, Params):
         read_min_len = int(Params["ReadLenMiN"]) #- fshift
         read_max_len = int(Params["ReadLenMaX"]) #+ fshift
 
-        LogFileName = "3-Filtered/Reports/" + "Quality_filtering" + "_iv_log.txt"
-        LOG_FILE    = open(LogFileName, "wt")
-        File        = open("2-Trimmed/Reports/" + iX + ".txt")
-        Burn        = [File.readline() for Idx in range(0,8)]
-        Length      = int(Burn[-1][:-1].split(" ")[-1].replace(",",""))
-        File.close()
-        report = "{}   {:>12,}".format(iX, Length)
-        print(report); LOG_FILE.write(report + "\n")
+        Length = ""
+        cutadapt_report = "2-Trimmed/Reports/" + iX + ".txt"
+        #avoid error when 2-Trimmed/Reports/*.txt does not exists - happens when start already trimmed input
+        if not os.path.exists(cutadapt_report):
+            os.system("gzcat  2-Trimmed/" + iX + ".fastq.gz |wc -l > tmp.t")
+            lines_in_fastq = int(open('tmp.t', 'r').read()[:-1])
+            Length = int(lines_in_fastq / 4)
+            print("{} adapters removed elsewhere! \n".format(iX))
+        elif os.path.exists(cutadapt_report):
+            File = open(cutadapt_report)
+            Burn = [File.readline() for Idx in range(0, 8)]
+            Length = int(Burn[-1][:-1].split(" ")[-1].replace(",", ""))
+            File.close()
+        else:
+            pass  # no options left
+
+        report = "{}   {:>12,}".format(iX, Length); print(report)
+        LogFileName = "3-Filtered/Reports/" + "Quality_filtering" +"_iv_log.txt"
+        LOG_FILE = open(LogFileName, "wt")
+        LOG_FILE.write(report + "\n")
 
         File    = gzip.open("2-Trimmed/" + iX + ".fastq.gz", "rt")
         FileOut = open("3-Filtered/" + iX + ".fastq", "w")
@@ -347,8 +359,10 @@ def rawAssignment(SRAList, Names, Params):
 
     makeDirectory("6-AssignRaw")
     makeDirectory("6-AssignRaw/Reports")
-
-    include_mapped_twice = True  # includes reads mapped twice NH:i:2
+    # include_mapped_twice = True/False influence normalization_factor (via that RPM) & mapped reads
+    # if True normalisation_factor is computed caounted all mapped reads :: experimental use only
+    # if False reads mapped once are counted only :: more conservative and use
+    include_mapped_twice = False  # includes reads mapped twice NH:i:2  :: suggested value False
     save_csv             = False  # save output to tab delim csv. in addition to hdf5
 
     rlmin   = int(Params["ReadLenMiN"])
@@ -471,9 +485,20 @@ def rawAssignment(SRAList, Names, Params):
         LOG_FILE.write(report + "\n"); print(report); report = ""
 
         ## Convert RAW -> RPM
-        l = [0 for read in bamfile.fetch() if read.get_tag("NH") >= 1]   # all mapped reads
-        normFactor = len(l) / 10 ** 6                                    # normalisation factor
-        col2norm = [str(i) for i in (range(rlmin, rlmax + 1))] + ["sum"] # columns to normalize
+        # NB! include_mapped_twice = True  influence how RPM is calculated
+        normFactor = 0
+        if include_mapped_twice:
+            l = [0 for read in bamfile.fetch() if read.get_tag("NH") >= 1]  # all mapped reads
+            normFactor = len(l) / 10 ** 6  # normalisation factor
+            report = "Normalization factor {} is computed based on all mapped reads {:,}".format(normFactor, len(l))
+        else:
+            l = [0 for read in bamfile.fetch() if read.get_tag("NH") == 1]  # reads mapped once
+            normFactor = len(l) / 10 ** 6  # normalisation factor
+            report = "Normalization factor {} is computed based on reads mapped once {:,}".format(normFactor, len(l))
+
+        LOG_FILE.write(report + "\n"); print(report); report = ""
+
+        col2norm = [str(i) for i in (range(rlmin, rlmax + 1))] + ["sum"]
 
         for iX in col2norm:  # normalization
 
