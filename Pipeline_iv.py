@@ -220,6 +220,7 @@ def yeastChr():
     return ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','Mito']
 
 
+
 def cutAdapt(SRAList, Names, Params):
 
     makeDirectory("2-Trimmed")
