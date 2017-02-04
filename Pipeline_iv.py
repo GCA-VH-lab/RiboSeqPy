@@ -220,7 +220,6 @@ def yeastChr():
     return ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','Mito']
 
 
-
 def cutAdapt(SRAList, Names, Params):
 
     makeDirectory("2-Trimmed")
@@ -257,6 +256,9 @@ def qualityFilter(SRAList, Names, Params):
     makeDirectory("3-Filtered")
     makeDirectory("3-Filtered/Reports")
 
+    LogFileName = "3-Filtered/Reports/" + "Quality_filtering" + "_iv_log.txt"
+    LOG_FILE = open(LogFileName, "wt")
+
     for iX in Names:
         low_qual     = 0 
         short_reads  = 0
@@ -273,6 +275,8 @@ def qualityFilter(SRAList, Names, Params):
             lines_in_fastq = int(open('tmp.t', 'r').read()[:-1])
             Length = int(lines_in_fastq / 4)
             print("{} adapters removed elsewhere! \n".format(iX))
+        # review: might need to be changed as leads inconsistency in reprot of short/long removed reads nr.
+        # caount of all reads in raw fastq file. 2-Trimmed/*.fastq.gz contains reads with adapter - wo. adapter are removed
         elif os.path.exists(cutadapt_report):
             File = open(cutadapt_report)
             Burn = [File.readline() for Idx in range(0, 8)]
@@ -281,10 +285,8 @@ def qualityFilter(SRAList, Names, Params):
         else:
             pass  # no options left
 
-        report = "{}   {:>12,}".format(iX, Length); print(report)
-        LogFileName = "3-Filtered/Reports/" + "Quality_filtering" +"_iv_log.txt"
-        LOG_FILE = open(LogFileName, "wt")
-        LOG_FILE.write(report + "\n")
+        report = "{}   {:>12,}".format(iX, Length)
+        LOG_FILE.write(report + "\n"); print(report)
 
         File    = gzip.open("2-Trimmed/" + iX + ".fastq.gz", "rt")
         FileOut = open("3-Filtered/" + iX + ".fastq", "w")
