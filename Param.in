@@ -1,4 +1,4 @@
-# Start: 2
+# Start: 7
 # Stop:  8
 # 
 # \\  0 - Print parameters and do nothing
@@ -21,7 +21,7 @@
 #
 # \\ Quality filter threshold for retaining reads (0.0 - 1.0). Higher is more selective.
 #
-# Mapping: 5
+# Mapping: 3
 #
 # \\ 5 - Map reads according to their 5' end
 # \\ 3 - Map reads according to their 3' end
@@ -34,7 +34,8 @@
 #
 # MetagThreshold: 60
 #
-# \\ 30 - number of 5/3' mappings found around start or stop if less ignore a gene/region
+# \\ 30 - number of 5/3' mappings (raw counts) found around start or stop if less ignore a gene/region
+# \\ If Normalized = "rpm"  MetagThreshold is readjusted accordingly inside program - divided by normalization_factor
 #
 # MetagSpan: 60
 #

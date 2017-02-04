@@ -133,6 +133,23 @@ def not_enough_data(df, Threshold=12):
     return True if df.sum().sum() < Threshold else False
 
 
+def raw_metag_threshold_to_rpm(BamName, Threshold):
+    """
+    Converts raw MetagThresold to rpm MetagThreshold
+
+    :param BamName:    BAM file used for caclulating normalization factor
+    :param Threshold:  raw threshold
+    :return: normalized threshold to fit with rpm normlized data
+    """
+    bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM file
+    c = 0
+    for read in bamfile.fetch():
+        if read.get_tag("NH") == 1: #mapped once
+            c+=1
+
+    return Threshold/(c/10**6)
+
+
 def df_framing(df1, index, columns, strand="+"):
     """ returns df what contains values for all positions in the given range
     df1 is condensed df containing positions with values > 0
@@ -566,6 +583,15 @@ def metagTables(SRAList, Names, Params):
         LOG_FILE.write(report + "\n"); print(report)
         # Annotation
         tabixfile = pysam.TabixFile("0-References/genome.gtf.gz", parser=pysam.asGTF())
+        # Adjust Threshold if for RPM if Normalization is "rpm"
+        if dataNorm == "rpm":
+            BamName = "5-Aligned/" + iN + ".bam"  # sorted and indexed BAM
+            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold)
+        else:
+            pass
+
+        report = "\nMetagThreshold: {:.2f}\t  data normalization {}".format(Threshold, dataNorm)
+        LOG_FILE.write(report + "\n"); print(report)
 
         Fkey, Rkey = ("For_rpm", "Rev_rpm") if dataNorm == "rpm" else ("For_raw", "Rev_raw")  # keys for h5
         df_f = pd.read_hdf(infile_h5, Fkey)  # read in Forward str. df from hdf
