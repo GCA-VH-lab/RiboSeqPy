@@ -1,40 +1,34 @@
 # RiboSeqPy
 
-Collection of routines for processing **Ribo-Seq** data joined into Python pipeline.
-Our main aim is to analyze changes of translational dynamic on different conditions in yeast.
-The first part of pipeline starts with _fastq_ preprocessing continues with aligning reads
-to genome, mapping ribosome positions (uncorrected) and ends with producing metagenomic
-plots around start and stop codons. This is how far it goes in the moment. 
-New analyses will be added soon.
+Collection of routines for processing **Ribo-Seq** data joined into Python pipeline. Our main aim is to analyze changes of translational dynamic between two different conditions in yeast. The first part of pipeline  starts with _fastq_ preprocessing continues with aligning reads to genome, mapping ribosome positions (uncorrected) and ends with producing metagene plots around start and stop codons. Second part of pipeline does P-Site assignment according given offsets in the file `readlength_offsets.txt`. Then pipeline part 2 calculates `codon relative rpm` and `codon relative fold difference` (FD). __FD__ calculation assumes you have Ribo-Seq data for two conditions (A condition; B wild type). This is how far it goes in the moment.  
 
 
 ### Prerequisite
 1) Python:
 
-  Its ok to use system python but have you own local version gives more flexibility.
-  I used Anaconda Python v.3.5(& 2.7) from [Continuum](https://www.continuum.io/downloads). It comes with a bunch of libraries and have a nice 
-  package manager `conda`. Before conda is able to install bioinformatic libraries/programs you have
-  add the _bioconda_ channel.
+  It's ok to use system python but have you own local version gives more flexibility. I used Anaconda Python v.3.5 from [Continuum](https://www.continuum.io/downloads). It comes with a bunch of libraries and have a nice  package manager `conda`. Before `conda` is able to install bioinformatic libraries/programs you have add the _bioconda_ channel.
   
     conda config --add channels bioconda
+2) [sra-tools](https://github.com/ncbi/sra-tools/wiki/Downloads) 
           
-2) [cutadapt](https://cutadapt.readthedocs.io/en/stable/)   
+3) [cutadapt](https://cutadapt.readthedocs.io/en/stable/)
 
     conda install cutadapt
-          
-3) HISAT2    ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads
+   
+4) `pigz - optional if not installed cutadapt falls back to single core mode
+
+5) [HISAT2](ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
 
    _version 2.0.5_ or higher.
-   Hisat2 trims ends of reads with bad quality by default. That leads to uncorrect mapping of ribosome location.
-   From the version 2.0.5 there is an option to turn this behavior off.
+   Hisat2 trims ends of reads with bad quality by default. That leads to uncorrect mapping of ribosome location. From the version 2.0.5 there is an option to turn this behavior off.
    
-4) [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+6) [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 
-5) [samtools](https://github.com/samtools/samtools/) 
+7) [samtools](https://github.com/samtools/samtools/) 
 
     conda install samtools
-        
-6) [pysam](https://github.com/pysam-developers/pysam)
+  
+8) [pysam](https://github.com/pysam-developers/pysam)
 
     conda install pysam
 
@@ -46,18 +40,26 @@ New analyses will be added soon.
 
 Other data files are derived based on those three and commands for that are described in the file  `build_index.sh`.
 _Saccharomyces cerevisiae_ genome, annotation, ncRNA and indexes are locating in the folder **0-References/**.
-Dummy dataset for testing purpose with 1 milj reads locates in the folder **1-Raw/**.
+Dummy dataset for testing purpose with __1__ milj. reads locates in the folder **1-Raw/**.
 
 
 ### Usage
-Pipeline is controlled by parameters in the file **Param.in**. You can specify steps you want to run,
-readlength range, mapping (5' or 3'). 
+Pipeline is split in two parts and controlled by parameters in the file **Param.in**. Part 1 runs up to mapping read ends to genome and producing metagene plots (steps 1 -  8 in Param.in). Part 2 creates corrected P-Site assignment and computes codon relative fold differences (FD) of between 2 conditions. In  **Param.in** you can specify steps you want to run, read length range, mapping (5' or 3') etc.. 
 
-    python  Pipeline_iv.py
-
+```
+    python  Pipeline_part1.py
+```
 Logfiles are generated for each step and stored in Reports/ folder.
 
-
+### Hard coded variables
+Some variables are hard coded in to python script. 
+(a) Adapter sequence for `cutadapt`  is _CTGTAGGCACCATCAAT_. Locates in `Pipeline_part_1.py` function **cutAdapt()**.
+(b) Chromosome names (I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII, XIII, XIV, XV, XVI, Mito) must be compatible with Genome.fa and Genome.gtf.    
+Locates in `Pipeline_part_1.py` and `Pipeline_part_2.py` function **yeastChr()**.
 ### References
-Firs parts of the code and pipeline backbone is based on a code used in Radhakrishnan, A., et al. Cell (2016)
+Firs parts of the code and pipeline backbone is based on a code used in  
+1. Radhakrishnan, A., et al. Cell (2016)
 https://github.com/greenlabjhmi/2016-Cell-Dhh1
+Second part for calculating `codon relative fold difference` is Python 3 adaptation similar to used in:  
+2. Kannan, K., et al. PNAS (2014)  
+
