@@ -15,7 +15,7 @@ Collection of routines for processing **Ribo-Seq** data joined into Python pipel
 
     conda install cutadapt
    
-4) `pigz - optional if not installed cutadapt falls back to single core mode
+4) `pigz` - optional if not installed cutadapt falls back to single core mode
 
 5) [HISAT2](ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)
 
