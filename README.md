@@ -56,6 +56,8 @@ Some variables are hard coded in to python script.
 (a) Adapter sequence for `cutadapt`  is _CTGTAGGCACCATCAAT_. Locates in `Pipeline_part_1.py` function **cutAdapt()**.
 (b) Chromosome names (I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII, XIII, XIV, XV, XVI, Mito) must be compatible with Genome.fa and Genome.gtf.    
 Locates in `Pipeline_part_1.py` and `Pipeline_part_2.py` function **yeastChr()**.
+(c) GTF file from ensembl, i. e. must contain features `stop_codon` and `start_codon`  
+
 ### References
 Firs parts of the code and pipeline backbone is based on a code used in  (1) Radhakrishnan, A., et al. Cell (2016)
 https://github.com/greenlabjhmi/2016-Cell-Dhh1. Second part for calculating `codon relative fold difference` is Python 3 adaptation similar to (2) Kannan, K., et al. PNAS (2014)  
