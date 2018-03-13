@@ -1,4 +1,4 @@
-# Start: 2
+# Start: 8
 # Stop:  8
 #
 # \\  1 - Download the data
@@ -29,7 +29,7 @@
 # Mapping: 5
 #
 # \\ 5 - Map reads according to their 5' end
-# \\ 3 - Map reads according to their 3' end  todo: testing
+# \\ 3 - Map reads according to their 3' end  todo testing
 #
 # ReadLenMiN: 25
 # ReadLenMaX: 35
@@ -42,9 +42,9 @@
 # \\ rpm - use normalized data - reads per miljon
 # \\ raw - raw counts
 #
-# MappedTwice: False
+# MappedTwice: Yes
 #
-#  \\ True or False
+#  \\ No or Yes IF Yes include reads mapped once and twice
 #
 # MetagThreshold: 30
 #
@@ -107,8 +107,9 @@
 # \\ 2 - A-site + one codon before
 #
 # \\ SRR0000001,2,3,4 are fake SRRs. You can use
+#SRR0000001	WTS1_20m
+#SRR0000004	WTS3_20m
+#SRR0000002	MetS2_20m
 
-SRR0000001	WTS1
-SRR0000004	WTS3
-SRR0000002	MetS2
-SRR0000005	MetS2
+SRR0000005	MetS4_20m
+

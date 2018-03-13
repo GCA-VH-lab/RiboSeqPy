@@ -21,6 +21,13 @@ import seaborn as sns
 from collections import Counter
 from collections import defaultdict
 
+import warnings
+import tables
+
+# to supress NaturalNameWarning rawAssignment()
+# pd.DataFrame column names are '25', '26' ... etc and saving to h5 will cause warning
+warnings.filterwarnings('ignore', category=tables.NaturalNameWarning)
+
 #  Codes backbone from Radhakrishnan, A., et al. Cell (2016)
 #!  Changes
 #! adapted for Python 3
@@ -52,7 +59,6 @@ def cleanFile(File, Condition):
         sp.Popen(["rm", File])
 
     if Condition == "bgzip":
-        # bgzip No of cores is hard coded
         BgZip = ["bgzip", "-@", Params['cpu'], File]
         BgZipIt = sp.Popen(BgZip, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         BgZipIt.wait()
@@ -172,8 +178,8 @@ def raw_metag_threshold_to_rpm(BamName, Threshold):
 
 
 def df_framing(df1, index, columns, strand="+"):
-    """ returns df what contains values for all positions in the given range
-    df1 is condensed df containing positions with values > 0
+    """ returns df what contains values for all positions in the given range.
+    Original df is condensed, i. e. positions with values < 0 not included
 
     :param df1:     condensed df, i. e.  don't contain rows with 0 in index
     :param index:   range of genome positions
@@ -282,6 +288,22 @@ def yeastChr():
     # Ordered yeast Chr list short names from ensembl
     return ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','Mito']
 
+# generalized do   "Bioinformatics Programming Using Python by Mitchell L Model"
+def do(collection, fn):
+    '''  Generalized do function
+    '''
+    for item in collection:
+        fn(item)
+
+# redefine print   "Bioinformatics Programming Using Python by Mitchell L Model"
+def print_collection(collection):
+    ''' Generalized print_collection function
+    '''
+    do(collection, print)
+
+def print_params(Params):
+    print_collection(("{:15s}- {}".format(k, Params[k]) for k in sorted(Params)))
+
 
 def cutAdapt(SRAList, Names, Params):
 
@@ -348,7 +370,7 @@ def qualityFilter(SRAList, Names, Params):
             Length = int(Burn[-1][:-1].split(" ")[-1].replace(",", ""))
             File.close()
 
-        report = "{}   {:>12,}".format(iX, Length); print(report)
+        report = " {:18} : {:>12,}".format(iX, Length); print(report)
         LOG_FILE.write(report + "\n")
 
         File    = gzip.open("2-Trimmed/" + iX + ".fastq.gz", "rt")
@@ -377,10 +399,13 @@ def qualityFilter(SRAList, Names, Params):
                 else:
                     low_qual +=1
 
-        report  = " Reads len < {}\t   {:>9,}\n".format(read_min_len, short_reads)
-        report += " Reads len > {}\t{:>9,}\n".format(read_max_len, long_reads)
-        report += " Quality   < {:2.0f}\t{:>9,}".format(-10 * np.log10(1 - Quality), low_qual)
-        report += "\n\t\t\t   {:>10,} reads left".format(Length - (short_reads + low_qual))
+        #SumPhred = (-10 * np.log10(1 - Quality), low_qual) # Convert Quality to Phred sum
+
+        report  = " Reads len < {:>3} : {:>12,}\n".format(read_min_len, short_reads)
+        report += " Reads len > {:>3} : {:>12,}\n".format(read_max_len, long_reads)
+        report += " Quality   < {:>3} : {:>12,}\n".format(Quality, low_qual)
+        report += " Reads left      : {:>12,}".format(Length - (short_reads + low_qual))
+
         print(report, "\n"); LOG_FILE.write(report + "\n\n")
 
         File.close()
@@ -402,13 +427,14 @@ def ncRNASubtract(SRAList, Names, Params):
         Unmapped = "4-Subtracted/" + iX + ".fastq"
         
         Bowtie2  = ["bowtie2", "--no-unal", "-p", Params['cpu'], "--un", Unmapped, "-x", ncRNA, "-U", Input,"-S", Output]
+        print(Bowtie2)
         Subtract = sp.Popen(Bowtie2, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         Subtract.wait()
         
         FileOut  = open("4-Subtracted/Reports/" + iX + ".txt","w")
         FileOut.write(Subtract.communicate()[1])
         FileOut.close()
-        
+        print("Cleaning: {} \t{}".format("3-Filtered/" + iX + ".fastq",Params["Clean"]))
         cleanFile("3-Filtered/" + iX + ".fastq", Params["Clean"])
         cleanFile("4-Subtracted/SAM/" + iX + ".sam", "rm")
 
@@ -425,7 +451,9 @@ def genomeAlign(SRAList, Names, Params):
         NotAli  = "5-Aligned/" + iX + "_unaligned.fastq"  # added! unalinged reads output
         
         Hisat2  = ["hisat2", "--no-unal", "-p", Params['cpu'], "--no-softclip", "--dta", "-x", Genome, "-U", Input, "-S", Output]
+        # IF reads not aligned to genome also needed ncomment line bleow
         #Hisat2 = ["hisat2", "-p 6", "--no-softclip", "--dta", "--un", NotAli, "-x", Genome, "-U", Input, "-S", Output]
+        print(Hisat2)
 
         Align   = sp.Popen(Hisat2, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
 
@@ -434,7 +462,7 @@ def genomeAlign(SRAList, Names, Params):
         FileOut.close()
 
         cleanFile("4-Subtracted/" + iX + ".fastq", Params["Clean"])
-
+        print("Sam2Bam {}".format(iX))
         SamToBam(iX)
 
 
@@ -443,7 +471,7 @@ def rawAssignment(SRAList, Names, Params):
     makeDirectory("6-AssignRaw")
     makeDirectory("6-AssignRaw/Reports")
     # include_mapped_twice influence ho normalisation factor is computed. vt blow
-    include_mapped_twice = False  # includes reads mapped twice NH:i:2
+    include_mapped_twice = Params['MappedTwice']  # includes reads mapped twice NH:i:2
     save_csv             = False  # save output to tab delim csv. in addition to hdf5
 
     rlmin   = int(Params["ReadLenMiN"])
@@ -462,7 +490,7 @@ def rawAssignment(SRAList, Names, Params):
         LogFileName = "6-AssignRaw/Reports/" + iN + "_" + Mapping + "-End_" + rlrange + "_iv_log.txt"
         LOG_FILE    = open(LogFileName, "wt")
         # counters for log
-        c = c2_sum = c_once = chr_once = total_no = 0
+        c2_twice = c_once = total_no = 0
         # empty dataframe for collecting data
         df_for_sum = pd.DataFrame()
         df_rev_sum = pd.DataFrame()
@@ -473,16 +501,28 @@ def rawAssignment(SRAList, Names, Params):
 
         # humanChr() gives an ordered list
         for ref in yeastChr():
-            c2 = 0
+            c1  = 0
+            c2  = 0
+            reads_mapped_ref   = 0
+            ref_total_read_count = 0
+
             defF = defaultdict(list)  # DefaultDict  For
             defR = defaultdict(list)  # DefaultDict  Rev
             ForDict = {}  # Collecting  data For
             RevDict = {}  # Collecting  data Rev
 
             for read in bamfile.fetch(ref):
-                chr_once += 1
-                if read.get_tag("NH") == 1 :  # NH tag (NH:i:1) tells how many times read are mapped to genome
-                    c += 1
+                ref_total_read_count += 1
+                # collect no of readsa
+                if (read.get_tag("NH") == 1):
+                    c1 += 1
+                elif (read.get_tag("NH") == 2):
+                    c2 +=1
+                else:
+                    pass
+
+                if (read.get_tag("NH") == 1):  # NH tag (NH:i:1) tells how many times read are mapped to genome
+                    reads_mapped_ref +=1
                     readl = read.query_length  # get read length
                     # Redefining leftmost & rightmost
                     if not read.is_reverse:  # read is Forward
@@ -497,8 +537,8 @@ def rawAssignment(SRAList, Names, Params):
                     if Mapping == "3":
                         defR[readl].append(end) if read.is_reverse else defF[readl].append(end)
                 # to include those mapped twice
-                elif (read.get_tag("NH") == 2) & include_mapped_twice:
-                    c2 += 1
+                if (read.get_tag("NH") == 2) & (include_mapped_twice == "Yes"):
+                    reads_mapped_ref += 1
                     readl = read.query_length  # get read length
                     # Redefining leftmost & rightmost
                     if not read.is_reverse:  # read is Forward
@@ -512,8 +552,6 @@ def rawAssignment(SRAList, Names, Params):
                         defR[readl].append(beg) if read.is_reverse else defF[readl].append(beg)
                     if Mapping == "3":
                         defR[readl].append(end) if read.is_reverse else defF[readl].append(end)
-                else:
-                    pass
 
             dummy = [0]
             for rlen in range(rlmin, rlmax + 1):
@@ -526,14 +564,15 @@ def rawAssignment(SRAList, Names, Params):
             df_for_sum = pd.concat([df_for_sum, df_for], ignore_index=True) # collect summary table
             df_rev_sum = pd.concat([df_rev_sum, df_rev], ignore_index=True) # collect summary table
 
+
             # Log_File pr Chr
-            report = "{:<5s}\t{:>10,d} reads".format(ref, c)
+            report = "{:<5s}\t{:>10,d} reads".format(ref, reads_mapped_ref)
             LOG_FILE.write(report + "\n"); print(report)
             # Reset/collect counter data
-            c_once += c
-            c2_sum += c2 # mapped twice
-            total_no += chr_once
-            c = chr_once = 0
+            c_once   += c1
+            c2_twice += c2 # mapped twice
+            total_no += ref_total_read_count
+            reads_mapped_ref = ref_total_read_count = 0
 
         # Per Name !!!
         # convert int column names to str
@@ -543,8 +582,8 @@ def rawAssignment(SRAList, Names, Params):
         ## Log Report summary
         report = "\nTotal No of reads {:>11,} mapped to genome\n".format(total_no)
         report += "Number   of reads {:>11,d} mapped once to genome\n".format(c_once)
-        report += "Number   of reads {:>11,d} mapped twice to genome reports # if option is turned on\n".format(c2_sum)
-        report += "Number   of reads {:>11,d} mapped more than counted already\n".format(total_no - (c_once +c2_sum))
+        report += "Number   of reads {:>11,d} mapped twice to genome reports # will be added if MappedTwice == True \n".format(c2_twice)
+        report += "Number   of reads {:>11,d} mapped more than counted already\n".format(total_no - (c_once +c2_twice))
         LOG_FILE.write(report); print(report)
         ##>>
         report = "\nOutput tables are stored:"; LOG_FILE.write(report+ "\n");print(report)
@@ -569,7 +608,7 @@ def rawAssignment(SRAList, Names, Params):
         ## Convert RAW -> RPM
         # NB! include_mapped_twice = True  influence how RPM is calculated
         normFactor = 0
-        if include_mapped_twice:
+        if include_mapped_twice == "Yes":
             l = [0 for read in bamfile.fetch() if read.get_tag("NH") <= 2]  # reads mapped once & twice
             normFactor = len(l) / 10 ** 6  # normalisation factor
             report = "Normalization factor {} is computed based on all mapped reads {:,}".format(normFactor, len(l))
@@ -610,7 +649,7 @@ def rawAssignment(SRAList, Names, Params):
         outfile = outf_idx_hdf
         restructurate_hd5(infile, outfile, close_outfile=True)
         report = "Restructurate hdf\nInfile:   {}\nOutfile    {}".format(infile, outfile)
-        LOG_FILE.write(report + "\n"); print(report)
+        LOG_FILE.write(report + "\n"); print(report, "\n")
 
     LOG_FILE.close()
     bamfile.close()
@@ -780,14 +819,15 @@ def metagPlots(SRAList, Names, Params):
 
                 fig, axes = plt.subplots(nrows=len(readLen_l), figsize=(x, y))
                 fig.suptitle(outfig, y=1.02, fontsize=12)
-                df = pd.DataFrame.from_csv(infile, index_col="rel_Pos", sep='\t')
+                df = pd.read_csv(infile, index_col="rel_Pos", sep='\t')
                 df.drop("Unnamed: 0", axis=1, inplace=True)
 
                 # Adjust plot for mapping and Start/Stop
                 if (Mapping == '5') & (iX == "Start"):
-                    df = dfTrimmiX5(df, Span, iX, inside_gene=30, outside_gene=12)
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=21)
                 elif (Mapping == '5') & (iX == "Stop"):
-                    df = dfTrimmiX5(df, Span, iX, inside_gene=27, outside_gene=9)
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=48, outside_gene=3)
+                # todo: correct region for 3' assignemnt
                 elif Mapping == '3':
                     df = dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=10)
                 else:
@@ -846,6 +886,7 @@ def metagPlotsPdf(SRAList, Names, Params):
                      "_" + dataNorm + "_" + iX + "_iv_Meta_Sum.txt"
             outfig = "8-MetagPlot/" + iN + "-" + Mapping + "-End" + "-" + rlrange + \
                      "-" + dataNorm + "-" + iX + "-iv.pdf"
+            outfig_title = "{}".format(iN.replace('_', '-'))
 
             legend_location = 'upper right' if iX == 'Stop' else 'upper left'
 
@@ -856,8 +897,8 @@ def metagPlotsPdf(SRAList, Names, Params):
 
                 fig, axes = plt.subplots(nrows=len(readLen_l), figsize=(w, h))
 
-                fig.suptitle(outfig, y=0.9, fontsize=12)
-                df = pd.DataFrame.from_csv(infile,  index_col=0, sep='\t')
+                fig.suptitle(outfig_title, y=0.9, fontsize=12)
+                df = pd.read_csv(infile,  index_col=0, sep='\t')
                 df.set_index("rel_Pos", inplace=True)
 
                 # Adjust plot for mapping and Start/Stop
@@ -897,11 +938,11 @@ def metagPlotsPdf(SRAList, Names, Params):
                     axes[i].set_ylabel(Params["Normalised"])
 
                 sns.despine()  # seaborn_aesthetic
-                fig.savefig(outfig, format='pdf', dpi=600, bbox_inches='tight')
-                print("\n{}".format(outfig))
+                fig.savefig(outfig, format='pdf', dpi=300, bbox_inches='tight')
+                print("{}".format(outfig))
             else:
                 print("Missing InFile -> {}".format(infile))
-
+    print("\n")
 
 def read_FASTA(filename, SplitHeader=True):
     """ Reads FastA file and returns a list of tuples, where first
@@ -1254,11 +1295,14 @@ def metagTables2(SRAList, Names, Params):
 
 Params, SRAs, Names = parseParams("Param.in")
 Options             = {1:downloadData, 2: cutAdapt, 3: qualityFilter, 4: ncRNASubtract, 5: genomeAlign, 6:rawAssignment, 
-                       7: metagTables, 8: metagPlotsPdf, 9:corrAssignment, 10:metagTables2}
+                       7: metagTables, 8: metagPlotspdf, 9:corrAssignment, 10:metagTables2}
+# if LaTex not installed use           8: metagPlots   insted  metagPlotspdf
+
 Start               = time.time()
 
-print("Params  {}".format(Params))
-print("Names {}\n".format(Names))
+print("\nParameters defined in Param.in:\n")
+print_params(Params)
+print("\nNames {}\n".format(Names))
 
 for iOpt in range(int(Params["Start"]), int(Params["Stop"]) + 1):
     Options[iOpt](SRAs, Names, Params)
