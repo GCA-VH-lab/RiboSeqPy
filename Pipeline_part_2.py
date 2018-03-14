@@ -113,13 +113,6 @@ def corrAssignment(SRAList, Names, Params):
     for iN in Names:
 
         fn_body = iN + "_" + Mapping + "-End_"
-
-        # todo: check *.h5 index status  - how? file exists OR keys structure
-        # todo:    a)filename contains "_idx_" b) keys structure "For_raw/V"
-        # todo: if not pass it through restructurate_hd5
-        # todo: *.h5 2 level index - keys  "/For_rpm/I" ..  def  restructurate_hd5(in.d5, out.h5, close_outfile=True)
-        #
-        #infile_h5 = "6-AssignRaw/" + fn_body + rlrange + "_iv" + ".h5"
         infile_idx_h5 = "6-AssignRaw/" + fn_body + rlrange + "_idx_iv" + ".h5"
         infile_h5 = infile_idx_h5
         storage = pd.HDFStore(infile_h5, "r")
@@ -129,34 +122,32 @@ def corrAssignment(SRAList, Names, Params):
         rl_l.sort()  # readlength with periodicity from the table
 
         fn_body = fn_body + str(min(rl_l)) + "-" + str(max(rl_l))
-        #outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_iv" + "_assign_rpm.h5"
-        outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
+        outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_iv" + "_assign_rpm.h5"
+        #outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
         outp_h5 = pd.HDFStore(outfile_hdf, complevel=5, complib="zlib", mode="w")
 
         LogFileName = "9-Assigncorr/Reports/" + fn_body + "_assign_corr_log.txt"
         LOG_FILE = open(LogFileName, "wt")
 
-        # 2. for Forw & Rev strand searatedly AND for each chr separatedly
-        #todo: Normalisation Raw - _rpm_ is hard coded  priority_low
-        keys_list = [i for i in storage.keys() if "_rpm" in i]
+        # 2. for Forw & Rev strand  AND for each chr separatedly
+        keys_list = [i for i in storage.keys() if "_rpm" in i] # get all keys
         keys_for = [i for i in keys_list if "For_" in i]
         keys_rev = [i for i in keys_list if "Rev_" in i]
 
         # Process Log
         report = "\nInput 1: {}\nRead length included:   {}".format(Params["OffsetFile"], rl_l)
-        print(report)
-        LOG_FILE.write(report + "\n")
+        print(report); LOG_FILE.write(report + "\n")
 
-        report = "\nInput 2: {}\nrlmin:   {}\nrlmax:   {}\nName:    {}\nMapping: {}".format(infile_idx_h5, rlmin, rlmax,
-                                                                                            iN, Mapping)
-        print(report, "\n")
-        LOG_FILE.write(report + "\n")
+        report = "\nInput 2: {}\nrlmin:   {}\nrlmax:   {}\nName:    {}\nMapping: {}".format(infile_idx_h5,
+                                                                                rlmin, rlmax, iN, Mapping)
+        print(report, "\n"); LOG_FILE.write(report + "\n")
 
         # 3. get chr length
         # todo: filename for Genome.fa  as parameter
         # todo: 2G problem. Consider use some another FastA format reader. This one opens file and reads it's content
         # todo: Python 3.5 in OSX can't open files bigger thant 2G - problems with human genomes
-        #
+        # todo: test it in py 3.6
+
         genome = read_FASTA_dictionary("0-References/Genome.fa")
         chr_length = {key: len(genome[key]) for key in genome.keys()}
 
@@ -177,16 +168,18 @@ def corrAssignment(SRAList, Names, Params):
             df1 = df1[columns].reindex(new_index)
 
             # 5.3 apply offset correction
+            # 5' OK!
+            # todo: 3' mapping corrrection
             for rlen in [str(i) for i in rl_l]:
                 df1[rlen] = df1[rlen].shift(readlen_and_offsets[int(rlen)])
 
             # 5.4
             df1["Chr"] = Chr
             df1["Srand"] = "+"
-            # works fine for Yeast  :: todo: for bigger genomes like human -> use interval - skip 0 lines
             df1 = df1[read_length_to_use].fillna(0)
             df1.loc[:, 'sum'] = df1.loc[:, read_length_to_use].sum(axis=1)
-
+            # drop lines 'sum' ==  0  --> data interval
+            df1 = df1[df1['sum'] != 0]
             # 5.5  write output to h5
             outp_h5[key] = df1
 
@@ -205,16 +198,18 @@ def corrAssignment(SRAList, Names, Params):
             df1 = df1[columns].reindex(new_index)
 
             # 6.3 apply offset correction
+            # 5' OK!
+            # todo: 3' mapping corrrection
             for rlen in [str(i) for i in rl_l]:
                 df1[rlen] = df1[rlen].shift(-readlen_and_offsets[int(rlen)])
 
             # 6.4
             df1["Chr"] = Chr
             df1["Srand"] = "+"
-            # works fine for Yeast  ::todo human ->iv
             df1 = df1[read_length_to_use].fillna(0)
             df1.loc[:, 'sum'] = df1.loc[:, read_length_to_use].sum(axis=1)
-
+            # drop lines 'sum' ==  0  --> data interval
+            df1 = df1[df1['sum'] != 0]
             # 6.5  write output to h5
             outp_h5[key] = df1
 
