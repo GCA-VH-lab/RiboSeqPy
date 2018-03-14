@@ -19,6 +19,9 @@ import numpy.random as rn
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+mpl.use('Agg')      # load backend - server safe
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 #todo: add metagene plot for corected and summarised data
 
@@ -103,10 +106,7 @@ def corrAssignment(SRAList, Names, Params):
 
     # todo: 3' mapping - not tested - Mapping goes to filename
     Mapping = Params["Mapping"]  # Mapping 5 or 3 prime end
-    if Mapping == "3":
-        print("\nWARNINGS!\n   3' Mapping is not implemented yet !\n")
-        exit(1)
-    # todo: Names and column names of OffsetFile must match. Put some check here !
+
     df = pd.read_csv(Params["OffsetFile"], index_col=0, sep="\t")
 
 
@@ -231,20 +231,16 @@ def metagTables2(SRAList, Names, Params):
     """From corrected assingments
     data in h5 file with missing lines, i.e. lines without counts are missing
     """
+    # todo: it differs from a function metagTabels() in- and output files and Span
     makeDirectory("10-corrMetagTbl")
     makeDirectory("10-corrMetagTbl/Reports")
     # todo: include UTR length req for metagenomic plots priority high
-    #utr5 = 30  # length of 5' UTR.  Start codons with UTRs longer than that included
-    #utr3 = 30  # length of 3' UTR.  Stop codons with UTRs longer than that included
-    # could utr3/5 will replace span later?
     Span = int(Params["MetagSpancorr"])  # nr of nt before and after 5' position of start/stop codons
     #time.sleep(0.1)
     offsettbl = Params["OffsetFile"]
 
-    # todo:assumes 5' :: todo is 3'
-    Mapping = "5"    #Params["Mapping"]  # 5 & 3
-    # todo: check d I use it default is rpm
-    dataNorm = "rpm" #Params["Normalised"]  # "raw" or "rpm"
+    Mapping =  Params["Mapping"]     # 5 & 3
+    dataNorm = Params["Normalised"]  # "raw" or "rpm"
 
     LogFileName = "10-corrMetagTbl/Reports/" + "MetagTabl_" + Mapping + "-End_" + "corr_iv_log.txt"
     LOG_FILE = open(LogFileName, "wt")
@@ -264,7 +260,7 @@ def metagTables2(SRAList, Names, Params):
         # file names
         outf_start = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Start" + "_iv_Meta_Sum.txt"
         outf_stop = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Stop" + "_iv_Meta_Sum.txt"
-        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
+        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_iv_assign_rpm.h5"
         # corrected assignment
         hd5 = pd.HDFStore(infile_h5, "r")
 
@@ -281,17 +277,21 @@ def metagTables2(SRAList, Names, Params):
         # Annotation
         tabixfile = pysam.TabixFile("0-References/genome.gtf.gz", parser=pysam.asGTF())
 
-        # Adjust Threshold if for RPM if Normalization is "rpm"
+        # MetagThreshold is in raw counts
+        # Adjust Threshold if to RPM  if Normalization is "rpm"
         Threshold = int(Params["MetagThreshold"])  # has to be here # FILTER 3
-        report = "Metagenomic threshold {}\n".format(Threshold)
+
         if dataNorm == "rpm":                      # assumes BAM file is not deleted
             BamName = "5-Aligned/" + iN + ".bam"   # sorted and indexed BAM
             rep = "Estimating normalisation factor from bam file {}".format(BamName); print(rep)
-            #todo: feed raw_metag_threshold_to_rpm() with normalisation_factors - reading BAM takse time!
-            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold)  # Adjusting FILTER 3  to rpm
+            #todo: feed raw_metag_threshold_to_rpm() with normalisation_factors - reading BAM takes time
+            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold, Params)  # Adjusting FILTER 3  to rpm
+
+
         else:
             pass
-        report+= "Metagenomic threshold  corrected {}".format(Threshold)
+
+        report = "Metagenomic threshold {:.1f} {}".format(Threshold, dataNorm)
         print(report); LOG_FILE.write(report + "\n")
 
         for Chr in yeastChr():
@@ -369,21 +369,146 @@ def metagTables2(SRAList, Names, Params):
         meta_start_sum = meta_start_dff + meta_start_dfr
         meta_stop_sum = meta_stop_dff + meta_stop_dfr
         # saving to file
-        report = "Around START: {}\nStart sites included  {}".format(outf_start, cf1+cr1);
-        LOG_FILE.write(report + "\n"); print(report)
+        report = "Around START: {:,} included \t{}".format(cf1 + cr1, outf_start);
+        LOG_FILE.write(report + "\n");
+        print(report)
         # print("Sum of saved table: {}".format(int(meta_start_sum["sum"].sum())))
         meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
         meta_start_sum['rel_Pos'] = list(range(-Span, Span + 1))
         meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
 
-        report = "Around STOP:  {}\nStop sites included  {}".format(outf_stop, cf2+cr2)
-        LOG_FILE.write(report + "\n"); print(report)
+        report = "Around  STOP: {:,} included \t{}".format(cf2 + cr2, outf_stop)
+        LOG_FILE.write(report + "\n");
+        print(report)
         meta_stop_sum['rel_Pos'] = list(range(-Span, Span + 1))
         meta_stop_sum.to_csv(outf_stop, sep='\t', header=True, index=True)
-        print("Done !")
         hd5.close()
 
     LOG_FILE.close()
+
+
+def metagPlotsCorrpdf(SRAList, Names, Params):
+    #
+    #
+    # ---------- Output graphics quality setings -------------
+    #
+    #   modify according your needs and system setup
+    #   OSX users safest is to uncomment all
+    #
+    #
+    from IPython.display import set_matplotlib_formats
+    set_matplotlib_formats('pdf', 'svg')
+    # Using laTeX to set Helvetica as default font
+    # from matplotlib import rc
+    # rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+    # rc('text', usetex=True)
+    # -------------------------------------------------------
+    #
+    # using pandas, matplotlib, seaborn, numpy
+    makeDirectory("10-corrMetagTbl/MetagPlot")
+    sns.set_style("white")    # seaborn_aesthetic
+    sns.set_context("paper")  # seaborn_aesthetic
+
+    Span = int(Params["MetagSpan"])
+    Mapping = Params["Mapping"]
+    dataNorm = Params["Normalised"]  # Mapping 5 or 3 prime end
+    #rlrange = Params["ReadLenMiN"] + "-" + Params["ReadLenMaX"]  # readlength range -> filename
+    readLen_l = [str(i) for i in range(int(Params["ReadLenMiN"]), int(Params["ReadLenMaX"]) + 1)] + ["sum"]
+
+    # colors for plot
+    colors = {'25': 'fuchsia', '26': 'blueviolet', '27': 'darkblue', '28': 'b', '29': 'r',
+              '30': 'salmon', '31': 'orange', '32': 'olive', '33': 'g', '34': 'tan',
+              '35': 'y', 'sum': 'brown'}
+
+    for iN in Names:
+        ofdf    = pd.read_csv(offsettbl, index_col=0, sep="\t")
+        rl_l    = [i for i in ofdf[iN].dropna().index]  # readlength with periodicity from the table
+        rlrange = str(min(rl_l)) + "-" + str(max(rl_l))
+
+        for iX in ["Start", "Stop"]:
+            infile = "10-corrMetagTbl/" + iN + "_" + Mapping + "-End" + "_" + rlrange + \
+                     "_" + dataNorm + "_" + iX + "_iv_Meta_Sum.txt"
+            outfig = "10-corrMetagTbl/MetagPlot/" + iN + "-" + Mapping + "-End" + "-" + rlrange + \
+                     "-" + dataNorm + "-" + iX + "-iv.pdf"
+
+            outfig_title    = "{} {} {}' mapping".format(iN.replace('_', '-'), iX, Mapping )
+            legend_location = 'upper right' if iX == 'Stop' else 'upper left'
+
+            if os.path.isfile(infile):    # infile exits
+
+                w = 8                     # figure width
+                h = 1.2 * len(readLen_l)  # figure height
+
+                fig, axes = plt.subplots(nrows=len(readLen_l), figsize=(w, h))
+
+                fig.suptitle(outfig_title, y=0.9, fontsize=12)
+                df = pd.read_csv(infile,  index_col=0, sep='\t')
+                df.set_index("rel_Pos", inplace=True)
+
+                # Adjust plot for mapping and Start/Stop
+
+                if (Mapping == '5') & (iX == "Start"):
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=18)
+                elif (Mapping == '5') & (iX == "Stop"):
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=18)
+
+                elif (Mapping == '3') & (iX == "Start"):
+                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=18)
+                elif (Mapping == '3') & (iX == "Stop"):
+                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=18)
+                else:
+                    pass
+
+                for i, readLen in enumerate(readLen_l):
+                    a = 0.6
+                    colors = colorsCheck(colors, readLen)
+                    x = df.index
+                    y = list(df.loc[:, readLen])
+                    axes[i].bar(x, y, color=colors[readLen], alpha=a)
+                    axes[i].legend([readLen], loc=legend_location)
+
+                    # colors for guide lines; adjust for beg and end for 5pr
+                    b, e = (df.index.min(), df.index.max())
+                    # todo: getting axvline colors can be function
+                    if Mapping == '5':
+                        for k in list(range(b, e+1, 3)):
+                            color = 'gray'
+                            if k == -12:
+                                color = 'g';    a = 0.5
+                            elif k == 0:
+                                color = 'r';    a = 0.4
+                            elif k < 0:
+                                color = 'gray'; a = 0.2
+                            else:
+                                color = 'gray'; a = 0.2
+                            # add line after each 3 nt
+                            axes[i].axvline(x=k, linewidth=1, alpha=a, color=color)
+
+                    elif Mapping == '3':
+                        for k in list(range(b, e+1, 3)):
+                            color = 'gray'
+                            if k == 12:
+                                color = 'g';    a = 0.5
+                            elif k == 0:
+                                color = 'r';    a = 0.4
+                            elif k < 0:
+                                color = 'gray'; a = 0.2
+                            else:
+                                color = 'gray'; a = 0.2
+                            # add line after each 3 nt
+                            axes[i].axvline(x=k, linewidth=1, alpha=a, color=color)
+                    else:
+                        # any other type of mapping
+                        pass
+
+                    axes[i].set_ylabel(Params["Normalised"])
+
+                sns.despine()  # seaborn_aesthetic
+                fig.savefig(outfig, format='pdf', dpi=300, bbox_inches='tight')
+                print("{}".format(outfig))
+            else:
+                print("Missing InFile -> {}".format(infile))
+    print("\n")
 
 
 def codonTablesA(SRAList, Names, Params):
@@ -1040,24 +1165,6 @@ def read_FASTA_dictionary(filename, SplitHeader=False):
     return {info: seq for info, seq in read_FASTA(filename, SplitHeader=False)}
 
 
-def raw_metag_threshold_to_rpm(BamName, Threshold):
-    """
-    Converts raw MetagThresold to rpm MetagThreshold
-
-    :param BamName:    BAM file used for caclulating normalization factor
-    :param Threshold:  raw threshold
-    :return: normalized threshold to fit with rpm normlized data
-    todo: check file for normalisation factors. it is less burden especially with big bam files
-    """
-    bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM file
-    c = 0
-    for read in bamfile.fetch():
-        if read.get_tag("NH") == 1: #mapped once
-            c+=1
-
-    return Threshold/(c/10**6)
-
-
 def df_framing(df1, index, columns, strand="+"):
     """ returns df what contains values for all positions in the given range
     df1 is condensed df containing positions with values > 0
@@ -1083,31 +1190,33 @@ def df_framing(df1, index, columns, strand="+"):
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
 
 
-def dfTrimmiX5(df, Span, iX, c=10):
-    """Truncates Data Frame to fit in figure 5pr """
+def dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=18):
+    """Truncates Data Frame to fit in figure 3pr"""
+    if (inside_gene > Span) | (outside_gene > Span):
+        print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
+        return df
     if iX == "Start":
-        return  df.loc[-24:Span-c, ]
+        return df.loc[-outside_gene:inside_gene, ]
     elif iX == "Stop":
-        return  df.loc[-Span:24-c, ]
+        return df.loc[-inside_gene:outside_gene, ]
     else:
+        print("Table is not modified. Mapping is unkown!")
         return df
 
 
-def dfTrimmiX3(df, Span, iX):
-    """Truncates Data Frame to fit in figure 3pr"""
-    #todo: rewrite it to accept "rel_Pos" index similarly to dfTrimmiX5()
-    x = 3 * 6
-    if (Span == 60) & (iX == "Start"):
-        df = df[30:90 + 2 * x]
-        df.reset_index(inplace=True)
-        del df['index']
-    elif (Span == 60) & (iX == "Stop"):
-        df = df[30:90 + 2 * x]
-        df.reset_index(inplace=True)
-    else:
-        pass
+def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
+    """Truncates Data Frame to fit in figure 5pr """
+    if (inside_gene > Span) | (outside_gene > Span):
+        print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
+        return df
 
-    return df
+    if iX == "Start":
+        return df.loc[-outside_gene:inside_gene, ]
+    elif iX == "Stop":
+        return df.loc[-inside_gene:outside_gene, ]
+    else:
+        print("Table is not modified. Mapping is unkown!")
+        return df
 
 
 def colorsCheck(dic, key):
@@ -1301,17 +1410,29 @@ def gene_normalisation_factor(df, gene_beg, gene_end, column='sum', method='mean
         print("Valid methods are: 'mean', 'sum' & 'median'\n")
 
 
-def reads_count_in_bam(BamName, NHi=1):
-    bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM file
-    c = 0
-    for read in bamfile.fetch():
-        if read.get_tag("NH") <= NHi:  # mapped once if 1; mapped once and twice if 2
-            c += 1
-    return c
+def reads_count_in_bam(BamName, Params):
+
+    bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM filee
+
+    if Params['MappedTwice'] == "Yes":
+        l = [0 for read in bamfile.fetch() if read.get_tag("NH") <= 2]  # reads mapped once & twice
+        report = "No of reads  mapped once and twice {:,}".format(len(l))
+        return len(l)
+    else:
+        l = [0 for read in bamfile.fetch() if read.get_tag("NH") == 1]  # reads mapped once
+        report = "No of reads mapped once {:,}".format(len(l))
+        return len(l)
 
 
-def normalisation_factor_from_bam(BamName, NHi=1):
-    return reads_count_in_bam(BamName, NHi) / (10 ** 6)
+def normalisation_factor_from_bam(BamName, Params):
+    return reads_count_in_bam(BamName, Params) / (10 ** 6)
+
+
+def raw_metag_threshold_to_rpm(BamName, Threshold, Params):
+    """
+    Converts raw MetagThresold to rpm MetagThreshold
+    """
+    return Threshold/normalisation_factor_from_bam(BamName, Params)
 
 
 def readlen_list_from_offset(OffsetFile, iN):
@@ -1323,14 +1444,31 @@ def readlen_list_from_offset(OffsetFile, iN):
     return list(readlen_and_offsets.keys())
 
 
+def do(collection, fn):
+    '''  Generalized do function
+    '''
+    for item in collection:
+        fn(item)
+
+
+def print_collection(collection):
+    ''' Generalized print_collection function
+    '''
+    do(collection, print)
+
+
+def print_params(Params):
+    print_collection(("{:15s}- {}".format(k, Params[k]) for k in sorted(Params)))
+
+
+
 Params, SRAs, Names = parseParams("Param.in")
-Options = {9: corrAssignment, 10: metagTables2, 11: codonTablesAB, 12: masterTable}
+Options = {9: corrAssignment, 10: metagTables2, 11:metagPlotsCorrpdf, 12: codonTablesAB, 13: masterTable}
 Start = time.time()
 
-print("Params  {}".format(Params))
-print("Names {}\n".format(Names))
-
-#codonTablesA(SRAList, Names, Params)
+print("\nParameters defined in Param.in:\n")
+print_params(Params)
+print("\nNames {}\n".format(Names))
 
 for iOpt in range(int(Params["Start"]), int(Params["Stop"]) + 1):
 
