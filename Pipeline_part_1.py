@@ -202,24 +202,21 @@ def df_framing(df1, index, columns, strand="+"):
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
 
 
-def dfTrimmiX3(df, Span, iX):
+def dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 3pr"""
-    #todo: rewrite it similarly to dfTrimmiX5()
-    x = 3 * 6
-    if (Span == 60) & (iX == "Start"):
-        df = df[30:90 + 2 * x]
-        df.reset_index(inplace=True)
-        del df['index']
-    elif (Span == 60) & (iX == "Stop"):
-        df = df[30:90 + 2 * x]
-        df.reset_index(inplace=True)
+    if (inside_gene > Span) | (outside_gene > Span):
+        print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
+        return df
+    if iX == "Start":
+        return df.loc[-outside_gene:inside_gene, ]
+    elif iX == "Stop":
+        return df.loc[-inside_gene:outside_gene, ]
     else:
-        pass
+        print("Table is not modified. Mapping is unkown!")
+        return df
 
-    return df
 
-
-def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18 ):
+def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 5pr """
     if (inside_gene > Span) | (outside_gene > Span):
         print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
@@ -604,14 +601,16 @@ def rawAssignment(SRAList, Names, Params):
         # Convert to RPM s
         report = "\n Converting raw -> rpm \n"
         LOG_FILE.write(report + "\n"); print(report); report = ""
-
+        #
         ## Convert RAW -> RPM
-        # NB! include_mapped_twice = True  influence how RPM is calculated
+        #
+        # include_mapped_twice = Yes  mapped twice are included to RPM normalisation
+        #
         normFactor = 0
         if include_mapped_twice == "Yes":
             l = [0 for read in bamfile.fetch() if read.get_tag("NH") <= 2]  # reads mapped once & twice
             normFactor = len(l) / 10 ** 6  # normalisation factor
-            report = "Normalization factor {} is computed based on all mapped reads {:,}".format(normFactor, len(l))
+            report = "Normalization factor {} is computed based reads  mapped once and twice {:,}".format(normFactor, len(l))
         else:
             l = [0 for read in bamfile.fetch() if read.get_tag("NH") == 1]  # reads mapped once
             normFactor = len(l) / 10 ** 6  # normalisation factor
@@ -825,7 +824,7 @@ def metagPlotspdf(SRAList, Names, Params):
             outfig = "8-MetagPlot/" + iN + "-" + Mapping + "-End" + "-" + rlrange + \
                      "-" + dataNorm + "-" + iX + "-iv.pdf"
 
-            outfig_title    = "{}".format(iN.replace('_', '-'))
+            outfig_title    = "{} {} {}' mapping".format(iN.replace('_', '-'), iX, Mapping )
             legend_location = 'upper right' if iX == 'Stop' else 'upper left'
 
             if os.path.isfile(infile):    # infile exits
@@ -844,9 +843,14 @@ def metagPlotspdf(SRAList, Names, Params):
                 if (Mapping == '5') & (iX == "Start"):
                     df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=21)
                 elif (Mapping == '5') & (iX == "Stop"):
-                    df = dfTrimmiX5(df, Span, iX, inside_gene=48, outside_gene=3)
-                else: # Mapping == '3'
-                    df = dfTrimmiX3(df, Span, iX)
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=60, outside_gene=3)
+
+                elif (Mapping == '3') & (iX == "Start"):
+                    df = dfTrimmiX3(df, Span, iX, inside_gene=60, outside_gene=3)
+                elif (Mapping == '3') & (iX == "Stop"):
+                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=30)
+                else:
+                    pass
 
                 for i, readLen in enumerate(readLen_l):
                     a = 0.6
@@ -859,19 +863,36 @@ def metagPlotspdf(SRAList, Names, Params):
                     # colors for guide lines; adjust for beg and end for 5pr
                     b, e = (df.index.min(), df.index.max())
                     # todo: getting axvline colors can be function
-                    for k in list(range(b, e+1, 3)):
-                        color = 'gray'
-                        if k == -12:
-                            color = 'g';    a = 0.5
-                        elif k == 0:
-                            color = 'r';    a = 0.4
-                        elif k < 0:
-                            color = 'gray'; a = 0.2
-                        else:
-                            color = 'gray'; a = 0.2
+                    if Mapping == '5':
+                        for k in list(range(b, e+1, 3)):
+                            color = 'gray'
+                            if k == -12:
+                                color = 'g';    a = 0.5
+                            elif k == 0:
+                                color = 'r';    a = 0.4
+                            elif k < 0:
+                                color = 'gray'; a = 0.2
+                            else:
+                                color = 'gray'; a = 0.2
+                            # add line after each 3 nt
+                            axes[i].axvline(x=k, linewidth=1, alpha=a, color=color)
 
-                        # add line after each 3 nt
-                        axes[i].axvline(x=k, linewidth=1, alpha=a, color=color)
+                    elif Mapping == '3':
+                        for k in list(range(b, e+1, 3)):
+                            color = 'gray'
+                            if k == 12:
+                                color = 'g';    a = 0.5
+                            elif k == 0:
+                                color = 'r';    a = 0.4
+                            elif k < 0:
+                                color = 'gray'; a = 0.2
+                            else:
+                                color = 'gray'; a = 0.2
+                            # add line after each 3 nt
+                            axes[i].axvline(x=k, linewidth=1, alpha=a, color=color)
+                    else:
+                        # any other type of mapping
+                        pass
 
                     axes[i].set_ylabel(Params["Normalised"])
 
