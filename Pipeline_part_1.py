@@ -784,89 +784,28 @@ def metagTables(SRAList, Names, Params):
     LOG_FILE.close()
 
 
-def metagPlots(SRAList, Names, Params):
-    # using pandas, matplotlib, seaborn, numpy
-    makeDirectory("8-MetagPlot")
-
-    sns.set_style("white")    # seaborn_aesthetic
-    sns.set_context("paper")  # seaborn_aesthetic
-
-
-    Span     = int(Params["MetagSpan"])
-    Mapping  = Params["Mapping"]
-    dataNorm = Params["Normalised"]  # Mapping 5 or 3 prime end
-    rlrange  = Params["ReadLenMiN"] + "-" + Params["ReadLenMaX"]  # readlength range -> filename
-    readLen_l= [str(i) for i in range(int(Params["ReadLenMiN"]), int(Params["ReadLenMaX"]) + 1)] + ["sum"]
-
-    # colors for plot
-    colors = {'25': 'fuchsia', '26': 'blueviolet', '27': 'darkblue', '28': 'b', '29': 'r',
-              '30': 'salmon', '31': 'orange', '32': 'olive', '33': 'g', '34': 'tan',
-              '35': 'y', 'sum': 'brown', 'ttl': 'brown'
-              }
-    a = 0.5  # alphat
-    x = 10  # figure width
-    y = 1.4 * len(readLen_l)  # figure height
-
-    for iN in Names:
-        for iX in ["Start", "Stop"]:
-            infile = "7-MetagTbl/" + iN + "_" + Mapping + "-End" + "_" + rlrange + \
-                     "_" + dataNorm + "_" + iX + "_iv_Meta_Sum.txt"
-            outfig = "8-MetagPlot/" + iN + "_" + Mapping + "-End" + "_" + rlrange + \
-                     "_" + dataNorm + "_" + iX + "_iv.png"
-
-            if os.path.isfile(infile):  # infile exits
-                print("\n{}".format(outfig))
-
-                fig, axes = plt.subplots(nrows=len(readLen_l), figsize=(x, y))
-                fig.suptitle(outfig, y=1.02, fontsize=12)
-                df = pd.read_csv(infile, index_col="rel_Pos", sep='\t')
-                df.drop("Unnamed: 0", axis=1, inplace=True)
-
-                # Adjust plot for mapping and Start/Stop
-                if (Mapping == '5') & (iX == "Start"):
-                    df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=21)
-                elif (Mapping == '5') & (iX == "Stop"):
-                    df = dfTrimmiX5(df, Span, iX, inside_gene=48, outside_gene=3)
-                # todo: correct region for 3' assignemnt
-                elif Mapping == '3':
-                    df = dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=10)
-                else:
-                    pass
-
-
-                xt = list(df.index[::6])+[0]
-
-                for i, readLen in enumerate(readLen_l):
-                    colors = colorsCheck(colors, readLen)
-
-                    df[readLen].plot(kind='bar', stacked=True, color=colors[readLen], \
-                                     width=0.9, legend=True, alpha=a, ax=axes[i])
-                    plt.sca(axes[i])
-                    axes[i].set_ylabel(Params["Normalised"])
-
-                sns.despine()  # seaborn_aesthetic
-                plt.tight_layout()
-                fig.savefig(outfig, dpi=300)
-            else:
-                print("Missing InFile -> {}".format(infile))
-
-
-def metagPlotsPdf(SRAList, Names, Params):
-    #todo: how it works with 3pr mapping
-    # using pandas, matplotlib, seaborn, numpy
-    makeDirectory("8-MetagPlot")
-    sns.set_style("white")    # seaborn_aesthetic
-    sns.set_context("paper")  # seaborn_aesthetic
-
-    # Using laTeX to set Helvetica as default font
-    from matplotlib import rc
-    rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
-    ## for Palatino and other serif fonts use:
-    # rc('font',**{'family':'serif','serif':['Palatino']})
-    rc('text', usetex=True)
-
+def metagPlotspdf(SRAList, Names, Params):
+    #
+    # todo: test 3-End mapping!
+    #
+    # ---------- Output graphics quality setings -------------
+    #
+    #   modify according your needs and system setup
+    #   OSX users safest is to uncomment all
+    #
+    #
     from IPython.display import set_matplotlib_formats
     set_matplotlib_formats('pdf', 'svg')
+    # Using laTeX to set Helvetica as default font
+    # from matplotlib import rc
+    # rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+    # rc('text', usetex=True)
+    # -------------------------------------------------------
+    #
+    # using pandas, matplotlib, seaborn, numpy
+    makeDirectory("8-MetagPlot")
+    sns.set_style("white")    # seaborn_aesthetic
+    sns.set_context("paper")  # seaborn_aesthetic
 
     Span = int(Params["MetagSpan"])
     Mapping = Params["Mapping"]
@@ -877,8 +816,7 @@ def metagPlotsPdf(SRAList, Names, Params):
     # colors for plot
     colors = {'25': 'fuchsia', '26': 'blueviolet', '27': 'darkblue', '28': 'b', '29': 'r',
               '30': 'salmon', '31': 'orange', '32': 'olive', '33': 'g', '34': 'tan',
-              '35': 'y', 'sum': 'brown', 'ttl': 'brown'
-              }
+              '35': 'y', 'sum': 'brown'}
 
     for iN in Names:
         for iX in ["Start", "Stop"]:
@@ -886,13 +824,13 @@ def metagPlotsPdf(SRAList, Names, Params):
                      "_" + dataNorm + "_" + iX + "_iv_Meta_Sum.txt"
             outfig = "8-MetagPlot/" + iN + "-" + Mapping + "-End" + "-" + rlrange + \
                      "-" + dataNorm + "-" + iX + "-iv.pdf"
-            outfig_title = "{}".format(iN.replace('_', '-'))
 
+            outfig_title    = "{}".format(iN.replace('_', '-'))
             legend_location = 'upper right' if iX == 'Stop' else 'upper left'
 
-            if os.path.isfile(infile):  # infile exits
+            if os.path.isfile(infile):    # infile exits
 
-                w = 8  # figure width
+                w = 8                     # figure width
                 h = 1.2 * len(readLen_l)  # figure height
 
                 fig, axes = plt.subplots(nrows=len(readLen_l), figsize=(w, h))
@@ -944,358 +882,10 @@ def metagPlotsPdf(SRAList, Names, Params):
                 print("Missing InFile -> {}".format(infile))
     print("\n")
 
-def read_FASTA(filename, SplitHeader=True):
-    """ Reads FastA file and returns a list of tuples, where first
-    part is a list of header elements and second seq as a string
-
-    read_FASTA('seqfile.fa', SplitHeader=True)
-        [(['gi', '1114567', 'gb', 'NC_00245'],
-        'ATATAGGCGCTTGGTGCGCGGCGGGCGCGGCTAGCAGCACCTTTAGTAGCTTTCATCAT'),
-        (['gi', '2224567', 'gb', 'NC_22245'],
-        'ATTTTTGGGGGGCGCGGCTAGCAGCACCTTTAGTAGCTTTCAAAAAATTTTCAT')]
-
-    info is:
-        >gi|1114567|gb|NC_00245
-
-    "Bioinformatics Programming Using Python by Mitchell L Model"
-    """
-    with open(filename) as file:
-
-        if SplitHeader:
-            return [(part[0].split('|'),
-                     part[2].replace('\n', ''))
-                    for part in
-                    [entry.partition('\n')
-                     for entry in file.read().split('>')[1:]]]
-        else:
-            return [(part[0],
-                     part[2].replace('\n', ''))
-                    for part in
-                    [entry.partition('\n')
-                     for entry in file.read().split('>')[1:]]]
-
-
-def read_FASTA_dictionary(filename, SplitHeader=False):
-    """ Creates dictionary from FastA file, where key is gi-number and value is seq
-
-    make_indexed_sequence_dictionary('seqfile.fa')
-        {'1114567': 'ATATAGGCGCTTGGTGCGCGGCGGGCGCGGCTAGCAGCACCTTTAGTAGCTTTCATCAT',
-         '2224567': 'ATTTTTGGGGGGCGCGGCTAGCAGCACCTTTAGTAGCTTTCAAAAAATTTTCAT' }
-
-    read_FASTA by default splits header '|' assuming NCBI entry but
-    here read_FASTA do not split header  (SplitHeader=False), i.e. key is the whole name.
-
-    "Bioinformatics Programming Using Python by Mitchell L Model"
-    """
-    return {info: seq for info, seq in read_FASTA(filename, SplitHeader=False)}
-
-
-def corrAssignment(SRAList, Names, Params):
-    '''
-    It reads in interval data _iv adds missing positions, corrects and writes to *.h5
-    corrects for offset and writes to new *_assigned_rpm.h5  file
-    in this part I keep lines with 0 in table.
-    It is not reasonable for human data or bigger genomes
-    '''
-
-    makeDirectory("9-Assigncorr")
-    makeDirectory("9-Assigncorr/Reports")
-
-    # save_csv= False  #save output to tab delim csv. *.h5 is saved anyway ##?
-    rlmin   = int(Params["ReadLenMiN"])
-    rlmax   = int(Params["ReadLenMaX"])
-    rlrange = str(rlmin) + "-" + str(rlmax)  # read length range 4 filename
-
-    # todo: 3' mapping - not tested - Mapping goes to filename
-    Mapping = Params["Mapping"]  # Mapping 5 or 3 prime end
-    if Mapping == "3":
-        print("\nWARNINGS!\n   3' Mapping is not implemented yet !\n")
-        exit(1)
-    # todo: Names and column names of OffsetFile must match. Put some check here !
-    df = pd.read_csv(Params["OffsetFile"], index_col=0, sep="\t")
-
-
-    for iN in Names:
-
-        fn_body = iN + "_" + Mapping + "-End_"
-
-        # todo: check *.h5 index status  - how? file exists OR keys structure
-        # todo:    a)filename contains "_idx_" b) keys structure "For_raw/V"
-        # todo: if not pass it through restructurate_hd5
-        # todo: *.h5 2 level index - keys  "/For_rpm/I" ..  def  restructurate_hd5(in.d5, out.h5, close_outfile=True)
-        #
-        #infile_h5 = "6-AssignRaw/" + fn_body + rlrange + "_iv" + ".h5"
-        infile_idx_h5 = "6-AssignRaw/" + fn_body + rlrange + "_idx_iv" + ".h5"
-        infile_h5 = infile_idx_h5
-        storage = pd.HDFStore(infile_h5, "r")
-
-        readlen_and_offsets = {i: int(df.loc[i, iN]) for i in df[iN].dropna().index}
-        rl_l = list(readlen_and_offsets.keys())
-        rl_l.sort()  # readlength with periodicity from the table
-
-        fn_body = fn_body + str(min(rl_l)) + "-" + str(max(rl_l))
-        #outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_iv" + "_assign_rpm.h5"
-        outfile_hdf = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
-        outp_h5 = pd.HDFStore(outfile_hdf, complevel=5, complib="zlib", mode="w")
-
-        LogFileName = "9-Assigncorr/Reports/" + fn_body + "_assign_corr_log.txt"
-        LOG_FILE = open(LogFileName, "wt")
-
-        # 2. for Forw & Rev strand searatedly AND for each chr separatedly
-        #todo: Normalisation Raw - _rpm_ is hard coded  priority_low
-        keys_list = [i for i in storage.keys() if "_rpm" in i]
-        keys_for = [i for i in keys_list if "For_" in i]
-        keys_rev = [i for i in keys_list if "Rev_" in i]
-
-        # Process Log
-        report = "\nInput 1: {}\nRead length included:   {}".format(Params["OffsetFile"], rl_l)
-        print(report)
-        LOG_FILE.write(report + "\n")
-
-        report = "\nInput 2: {}\nrlmin:   {}\nrlmax:   {}\nName:    {}\nMapping: {}".format(infile_idx_h5, rlmin, rlmax, iN,
-                                                                                         Mapping)
-        print(report, "\n")
-        LOG_FILE.write(report + "\n")
-
-        # 3. get chr length
-        # todo: filename for Genome.fa  as parameter
-        # todo: 2G problem. Consider use some another FastA format reader. This one opens file and reads it's content
-        # todo: Python 3.5 in OSX can't open files bigger thant 2G - problems with human genomes
-        #
-        genome = read_FASTA_dictionary("0-References/Genome.fa")
-        chr_length = {key: len(genome[key]) for key in genome.keys()}
-
-        # columns to include
-        columns = ["Chr", "Strand"] + [str(i) for i in rl_l] + ["sum"]  # colum name #'s are str
-        read_length_to_use = [str(i) for i in rl_l]
-
-        # 5.Forward str each keys_for
-        for key in keys_for:
-
-            Chr = key.split("/")[-1]
-
-            # 5.1 read uncorrected data from h5 to df
-            df1 = storage[key]
-
-            # 5.2 reindex
-            new_index = list(range(chr_length[Chr]))
-            df1 = df1[columns].reindex(new_index)
-
-            # 5.3 apply offset correction
-            for rlen in [str(i) for i in rl_l]:
-                df1[rlen] = df1[rlen].shift(readlen_and_offsets[int(rlen)])
-
-            # 5.4
-            df1["Chr"] = Chr
-            df1["Srand"] = "+"
-            # works fine for Yeast  :: todo: for bigger genomes like human -> use interval - skip 0 lines
-            df1 = df1[read_length_to_use].fillna(0)
-            df1.loc[:, 'sum'] = df1.loc[:, read_length_to_use].sum(axis=1)
-
-            # 5.5  write output to h5
-            outp_h5[key] = df1
-
-        # Process Log
-        report = "Forward done!" ; print(report, "\n"); LOG_FILE.write("\n" + report + "\n")
-
-        # 6. Reverse str each keys_rev
-        for key in keys_rev:
-            Chr = key.split("/")[-1]
-
-            # 6.1 read uncorrected data from h5 to df
-            df1 = storage[key]
-
-            # 6.2 reindex
-            new_index = list(range(chr_length[Chr]))
-            df1 = df1[columns].reindex(new_index)
-
-            # 6.3 apply offset correction
-            for rlen in [str(i) for i in rl_l]:
-                df1[rlen] = df1[rlen].shift(-readlen_and_offsets[int(rlen)])
-
-            # 6.4
-            df1["Chr"] = Chr
-            df1["Srand"] = "+"
-            # works fine for Yeast  ::todo human ->iv
-            df1 = df1[read_length_to_use].fillna(0)
-            df1.loc[:, 'sum'] = df1.loc[:, read_length_to_use].sum(axis=1)
-
-            # 6.5  write output to h5
-            outp_h5[key] = df1
-
-        # Process Log
-        report = "Reverse done!"; print(report, "\n"); LOG_FILE.write(report + "\n")
-        offsets= [readlen_and_offsets[i] for i in rl_l]
-        report = "\nOutput: {}\nRead length included:  {}\nOffsets applied:       {}\nName:    {}\nMapping: {}".format(outfile_hdf, \
-                                                                                rl_l, offsets, iN, Mapping)
-
-        outp_h5.close()
-        storage.close()
-
-        print(report, "\n")
-        LOG_FILE.write(report + "\n")
-        LOG_FILE.close()
-
-
-def metagTables2(SRAList, Names, Params):
-    """From corrected assingments
-    data in h5 file can be interval, i. e. lines with 0 counts are missing
-    or continuous -  both index types are possible
-    """
-    makeDirectory("10-corrMetagTbl")
-    makeDirectory("10-corrMetagTbl/Reports")
-    # todo: include UTR length req for metagenomic plots priority high
-    #utr5 = 30  # length of 5' UTR.  Start codons with UTRs longer than that included
-    #utr3 = 30  # length of 3' UTR.  Stop codons with UTRs longer than that included
-    # could utr3/5 will replace span later?
-    Span = int(Params["MetagSpancorr"])  # nr of nt before and after 5' position of start/stop codons
-    #time.sleep(0.1)
-    offsettbl = Params["OffsetFile"]
-
-    # todo:assumes 5' :: todo is 3'
-    Mapping = "5"    #Params["Mapping"]  # 5 & 3
-    # todo: check d I use it default is rpm
-    dataNorm = "rpm" #Params["Normalised"]  # "raw" or "rpm"
-
-    LogFileName = "10-corrMetagTbl/Reports/" + "MetagTabl_" + Mapping + "-End_" + "corr_iv_log.txt"
-    LOG_FILE = open(LogFileName, "wt")
-    #time.sleep(0.1)
-
-    for iN in Names:
-        cf1 = cr1 = cf2 = cr2 = 0  # counters
-        report = "\nName: {}".format(iN)
-        LOG_FILE.write(report + "\n"); print(report)
-
-        # todo: input file name construction relies on offset table. Is it good or bad? What could bemore robust way?
-        df = pd.read_csv(offsettbl, index_col=0, sep="\t")
-        rl_l    = [i for i in df[iN].dropna().index]  # readlength with periodicity from the table
-        fn_body = iN + "_" + Mapping + "-End_"           # filename body
-        fn_body+= str(min(rl_l)) + "-" + str(max(rl_l))  #
-
-        # file names
-        outf_start = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Start" + "_iv_Meta_Sum.txt"
-        outf_stop = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Stop" + "_iv_Meta_Sum.txt"
-        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
-        # corrected assignment
-        hd5 = pd.HDFStore(infile_h5, "r")
-
-        # read from table and add 'sum'
-        columns = [str(i) for i in df[iN].dropna().index] + ['sum']
-
-        # Empty DataFrames
-        meta_start_dff = pd.DataFrame(index=range(0, 2 * Span + 1), columns=columns).fillna(0)
-        meta_start_dfr = pd.DataFrame(index=range(0, 2 * Span + 1), columns=columns).fillna(0)
-        meta_stop_dff  = pd.DataFrame(index=range(0, 2 * Span + 1), columns=columns).fillna(0)
-        meta_stop_dfr  = pd.DataFrame(index=range(0, 2 * Span + 1), columns=columns).fillna(0)
-
-        report = "Collecting data around genes Start & Stop - Span: {}".format(Span); print(report)
-        # Annotation
-        tabixfile = pysam.TabixFile("0-References/genome.gtf.gz", parser=pysam.asGTF())
-
-        # Adjust Threshold if for RPM if Normalization is "rpm"
-        Threshold = int(Params["MetagThreshold"])  # has to be here
-        if dataNorm == "rpm":                      # assumes BAM file is not deleted
-            BamName = "5-Aligned/" + iN + ".bam"   # sorted and indexed BAM
-            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold)
-        else:
-            pass
-
-        for Chr in yeastChr():
-            key_f = "For_rpm" + "/" + Chr
-            key_r = "Rev_rpm" + "/" + Chr
-            # It is much faster to read data chr wise in df than access slices from hd5
-            # hd5[key].loc[gtf.start - Span:gtf.start + Span, :] # - is slow
-            df_f = hd5[key_f]  # Forward
-            df_r = hd5[key_r]  # Reverse
-
-            for gtf in tabixfile.fetch(reference=Chr):
-
-                if (gtf.feature == 'stop_codon') & (gtf.strand == '+'):
-                    df = pd.DataFrame() # create empty df
-                    # enough coverage?
-                    if df_f.loc[gtf.start - Span:gtf.start + Span, "sum"].sum() < Threshold:
-                        continue
-                    else:
-                        df = df_f.loc[gtf.start - Span:gtf.start + Span, :]
-
-                    index = range(gtf.start - Span, gtf.start + Span + 1)
-                    # def df_framing() makes it interval safe
-                    df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
-                    meta_stop_dff = meta_stop_dff + df  # sum dataframes
-                    cf2 += 1
-
-                # Stop codon in Rev strand
-                elif (gtf.feature == 'stop_codon') & (gtf.strand == '-'):
-                    df = pd.DataFrame()  # create empty df
-
-                    if df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1, "sum"].sum() < Threshold: #-1 correction for rev strand
-                        continue
-                    else:
-                        df = df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1]
-
-                    index = range(gtf.end - Span - 1, gtf.end + Span)  # -1 correction
-                    df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
-                    meta_stop_dfr = meta_stop_dfr + df  # sum dataframes
-                    cr2 += 1
-
-                # Sart codon in Forw strand
-                elif (gtf.feature == 'start_codon') & (gtf.strand == '+'):
-                    df = pd.DataFrame()  # create empty df
-
-                    if df_f.loc[gtf.start - Span:gtf.start + Span, "sum"].sum() < Threshold:
-                        continue
-                    else:
-                        df = df_f.loc[gtf.start - Span:gtf.start + Span, :]
-
-                    index = range(gtf.start - Span, gtf.start + Span + 1)
-                    df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
-                    meta_start_dff = meta_start_dff + df  # sum dataframes
-                    cf1 += 1
-
-                # Start codon in Rev strand
-                elif (gtf.feature == 'start_codon') & (gtf.strand == '-'):
-                    df = pd.DataFrame()  # create empty df
-
-                    if df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1, "sum"].sum() < Threshold:  # Check for data
-                        continue
-                    else:
-                        df = df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1]  # -1 correction for rev strand
-
-                    index = range(gtf.end - Span - 1, gtf.end + Span)  # -1 correction for rev strand
-                    df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
-                    meta_start_dfr = meta_start_dfr + df  # sum dataframes
-                    cr1 += 1
-
-                else:
-                    pass
-
-        print("Summing up ...")
-        LOG_FILE.write("Summing up ...\n")
-        # summing up
-        meta_start_sum = meta_start_dff + meta_start_dfr
-        meta_stop_sum = meta_stop_dff + meta_stop_dfr
-        # saving to file
-        report = "Around START: {}\nStart sites included  {}".format(outf_start, cf1+cr1);
-        LOG_FILE.write(report + "\n"); print(report)
-        # print("Sum of saved table: {}".format(int(meta_start_sum["sum"].sum())))
-        meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
-        meta_start_sum['rel_Pos'] = list(range(-Span, Span + 1))
-        meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
-
-        report = "Around STOP:  {}\nStop sites included  {}".format(outf_stop, cf2+cr2)
-        LOG_FILE.write(report + "\n"); print(report)
-        meta_stop_sum['rel_Pos'] = list(range(-Span, Span + 1))
-        meta_stop_sum.to_csv(outf_stop, sep='\t', header=True, index=True)
-        print("Done !")
-        hd5.close()
-
-    LOG_FILE.close()
-
-
 
 Params, SRAs, Names = parseParams("Param.in")
 Options             = {1:downloadData, 2: cutAdapt, 3: qualityFilter, 4: ncRNASubtract, 5: genomeAlign, 6:rawAssignment, 
-                       7: metagTables, 8: metagPlotspdf, 9:corrAssignment, 10:metagTables2}
+                       7: metagTables, 8: metagPlotspdf }
 # if LaTex not installed use           8: metagPlots   insted  metagPlotspdf
 
 Start               = time.time()
