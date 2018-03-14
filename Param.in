@@ -1,4 +1,4 @@
-# Start: 8
+# Start: 2
 # Stop:  8
 #
 # \\  1 - Download the data
@@ -13,8 +13,9 @@
 # \\  ------------ Pipeline Part 2 start -----------------
 # \\  9 - Corrected assignment
 # \\ 10 - Metagenomic tables from corrected assignment
-# \\ 11 - Codon Tables for conditions A & B
-# \\ 12 - Master Tables for all replicas
+# \\ 11 - Create Metagenomic plots from corrected assignemnt
+# \\ 12 - Codon Tables for conditions A & B
+# \\ 13 - Master Tables for all replicas
 #
 # Clean: bgzip
 #
@@ -26,10 +27,10 @@
 #
 # \\ Quality filter threshold for retaining reads (0.0 - 1.0). Higher is more selective.
 #
-# Mapping: 5
+# Mapping: 3
 #
 # \\ 5 - Map reads according to their 5' end
-# \\ 3 - Map reads according to their 3' end  todo testing
+# \\ 3 - Map reads according to their 3' end
 #
 # ReadLenMiN: 25
 # ReadLenMaX: 35
@@ -48,14 +49,15 @@
 #
 # MetagThreshold: 30
 #
-# \\ 30 - number of 5/3' mappings (raw counts) found around start or stop if less ignore a gene/region
-# \\ If Normalized = "rpm"  MetagThreshold is readjusted accordingly - divided by normalization_factor
+# \\ 30 - raw counts around start or stop if less ignore a gene/region
+# \\ If Normalized = "rpm"  MetagThreshold is readjusted by dividing normalization_factor inside program
+# \\ FILTER 3
 #
 # MetagSpan: 60
 #
 # \\ 60 - number of nucleotides before and after start/stop in metagene profiles
 #
-# MetagSpancorr: 300
+# MetagSpancorr: 90
 #
 # \\ 90 - number of nucleotides before and after start/stop in metagenomic profile from corrected data
 #
@@ -71,7 +73,7 @@
 #
 # \\ is overwritten by hard coded formula   CodonRpmMeanThr = 1.6 / norm_factor  # FILTER 2  - more restrictive
 #
-# OffsetFile: readlength_offsets_expert.txt
+# OffsetFile: readlength_offsets_5-End.txt
 #
 # \\ file with read length and offsets - only these readlength are included into corrected/final assignment
 #
