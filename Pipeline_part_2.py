@@ -412,8 +412,6 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
     Span = int(Params["MetagSpan"])
     Mapping = Params["Mapping"]
     dataNorm = Params["Normalised"]  # Mapping 5 or 3 prime end
-    #rlrange = Params["ReadLenMiN"] + "-" + Params["ReadLenMaX"]  # readlength range -> filename
-    readLen_l = [str(i) for i in range(int(Params["ReadLenMiN"]), int(Params["ReadLenMaX"]) + 1)] + ["sum"]
 
     # colors for plot
     colors = {'25': 'fuchsia', '26': 'blueviolet', '27': 'darkblue', '28': 'b', '29': 'r',
@@ -421,9 +419,10 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
               '35': 'y', 'sum': 'brown'}
 
     for iN in Names:
-        ofdf    = pd.read_csv(offsettbl, index_col=0, sep="\t")
-        rl_l    = [i for i in ofdf[iN].dropna().index]  # readlength with periodicity from the table
-        rlrange = str(min(rl_l)) + "-" + str(max(rl_l))
+        ofdf      = pd.read_csv(Params['OffsetFile'], index_col=0, sep="\t")
+        rl_l      = [i for i in ofdf[iN].dropna().index]  # readlength with periodicity from the table
+        rlrange   = str(min(rl_l)) + "-" + str(max(rl_l))
+        readLen_l = [str(i) for i in rl_l] + ['sum']      # numbers to str
 
         for iX in ["Start", "Stop"]:
             infile = "10-corrMetagTbl/" + iN + "_" + Mapping + "-End" + "_" + rlrange + \
@@ -461,6 +460,7 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
 
                 for i, readLen in enumerate(readLen_l):
                     a = 0.6
+                    readLen = str(readLen)
                     colors = colorsCheck(colors, readLen)
                     x = df.index
                     y = list(df.loc[:, readLen])
