@@ -21,11 +21,10 @@ import seaborn as sns
 from collections import Counter
 from collections import defaultdict
 
+# to supress NaturalNameWarning rised by function rawAssignment()
+# pd.DataFrame column names are '25', '26' ... etc and saving to h5 will cause warning
 import warnings
 import tables
-
-# to supress NaturalNameWarning rawAssignment()
-# pd.DataFrame column names are '25', '26' ... etc and saving to h5 will cause warning
 warnings.filterwarnings('ignore', category=tables.NaturalNameWarning)
 
 #  Codes backbone from Radhakrishnan, A., et al. Cell (2016)
@@ -160,7 +159,23 @@ def not_enough_data(df, Threshold=12):
     return True if df.sum().sum() < Threshold else False
 
 
-def raw_metag_threshold_to_rpm(BamName, Threshold):
+def reads_count_in_bam(BamName, Params):
+
+    bamfile     = pysam.AlignmentFile(BamName, "rb")  # open BAM
+
+    if Params['MappedTwice'] == "Yes":
+        l = [0 for read in bamfile.fetch() if read.get_tag("NH") <= 2]  # reads mapped once & twice
+        report = "No of reads  mapped once and twice {:,}".format(len(l))
+        return len(l)
+    else:
+        l = [0 for read in bamfile.fetch() if read.get_tag("NH") == 1]  # reads mapped once
+        report = "No of reads mapped once {:,}".format(len(l))
+        return len(l)
+
+def normalisation_factor_from_bam(BamName, Params):
+    return reads_count_in_bam(BamName, Params) / (10 ** 6)
+
+def raw_metag_threshold_to_rpm(BamName, Threshold, Params):
     """
     Converts raw MetagThresold to rpm MetagThreshold
 
@@ -168,13 +183,8 @@ def raw_metag_threshold_to_rpm(BamName, Threshold):
     :param Threshold:  raw threshold
     :return: normalized threshold to fit with rpm normlized data
     """
-    bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM file
-    c = 0
-    for read in bamfile.fetch():
-        if read.get_tag("NH") == 1: #mapped once
-            c+=1
 
-    return Threshold/(c/10**6)
+    return Threshold/normalisation_factor_from_bam(BamName, Params)
 
 
 def df_framing(df1, index, columns, strand="+"):
@@ -292,11 +302,12 @@ def do(collection, fn):
     for item in collection:
         fn(item)
 
-# redefine print   "Bioinformatics Programming Using Python by Mitchell L Model"
+# redefine print
 def print_collection(collection):
     ''' Generalized print_collection function
     '''
     do(collection, print)
+
 
 def print_params(Params):
     print_collection(("{:15s}- {}".format(k, Params[k]) for k in sorted(Params)))
@@ -697,9 +708,12 @@ def metagTables(SRAList, Names, Params):
         Threshold = int(Params["MetagThreshold"])  # has to be here
         if dataNorm == "rpm":
             BamName = "5-Aligned/" + iN + ".bam"  # sorted and indexed BAM
-            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold)
+            Threshold = raw_metag_threshold_to_rpm(BamName, Threshold, Params)
         else:
             pass
+
+        report = "Threshold for Metagene {:.1f} {}".format(Threshold, dataNorm)
+        print(report);LOG_FILE.write(report+"\n")
 
         Fkey, Rkey = ("For_rpm", "Rev_rpm") if dataNorm == "rpm" else ("For_raw", "Rev_raw")  # keys for h5
         df_f = pd.read_hdf(infile_h5, Fkey)  # read in Forward str. df from hdf
@@ -768,14 +782,14 @@ def metagTables(SRAList, Names, Params):
         meta_start_sum = meta_start_dff + meta_start_dfr
         meta_stop_sum = meta_stop_dff + meta_stop_dfr
         # saving to file
-        report = "Around START: {}".format(outf_start);
+        report = "Around START: {:,} included \t{}".format(cf1+cr1, outf_start);
         LOG_FILE.write(report + "\n"); print(report)
         # print("Sum of saved table: {}".format(int(meta_start_sum["sum"].sum())))
         meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
         meta_start_sum['rel_Pos'] = list(range(-Span, Span + 1))
         meta_start_sum.to_csv(outf_start, sep='\t', header=True, index=True)
 
-        report = "Around STOP:  {}".format(outf_stop)
+        report = "Around  STOP: {:,} included \t{}".format(cf2+cr2, outf_stop)
         LOG_FILE.write(report + "\n"); print(report)
         meta_stop_sum['rel_Pos'] = list(range(-Span, Span + 1))
         meta_stop_sum.to_csv(outf_stop, sep='\t', header=True, index=True)
@@ -785,7 +799,6 @@ def metagTables(SRAList, Names, Params):
 
 def metagPlotspdf(SRAList, Names, Params):
     #
-    # todo: test 3-End mapping!
     #
     # ---------- Output graphics quality setings -------------
     #
@@ -901,14 +914,13 @@ def metagPlotspdf(SRAList, Names, Params):
                 print("{}".format(outfig))
             else:
                 print("Missing InFile -> {}".format(infile))
-    print("\n")
 
 
 Params, SRAs, Names = parseParams("Param.in")
-Options             = {1:downloadData, 2: cutAdapt, 3: qualityFilter, 4: ncRNASubtract, 5: genomeAlign, 6:rawAssignment, 
-                       7: metagTables, 8: metagPlotspdf }
-# if LaTex not installed use           8: metagPlots   insted  metagPlotspdf
 
+Options             = {1:downloadData, 2:cutAdapt, 3:qualityFilter, 4:ncRNASubtract, 5:genomeAlign,
+                       6:rawAssignment,7:metagTables, 8:metagPlotspdf
+                       }
 Start               = time.time()
 
 print("\nParameters defined in Param.in:\n")
@@ -918,5 +930,5 @@ print("\nNames {}\n".format(Names))
 for iOpt in range(int(Params["Start"]), int(Params["Stop"]) + 1):
     Options[iOpt](SRAs, Names, Params)
     
-    print("Step {} completed! Time taken thus far: {}".format(iOpt, time.time() - Start))
+    print("Step {} completed! Time taken thus far: {}\n".format(iOpt, time.time() - Start))
 print("\n")
