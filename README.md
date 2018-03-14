@@ -47,11 +47,21 @@ Dummy dataset for testing purpose with __1__ milj. reads locates in the folder *
 Pipeline is split in two parts and controlled by parameters in the file **Param.in**. Part 1 runs up to mapping read ends to genome and producing metagene plots (steps 1 -  8 in Param.in). Part 2 creates corrected P-Site assignment and computes codon relative fold differences (FD) of between 2 conditions. In  **Param.in** you can specify steps you want to run, read length range, mapping (5' or 3') etc.. 
 
 ```
-    python  Pipeline_part1.py
+    python  Pipeline_part_1.py
 ```
+
+Edit offset file (`readlength_offsets.txt`) according read length and offsets.
+
+```
+    python  Pipeline_part_2.py
+```
+
 Logfiles are generated for each step and stored in Reports/ folder.
 
-### Hard coded variables
+### Limitations
+One important limitation is that calculation of __codon relative fold difference__  can't handle multi-exon genes in the moment. This limitation restricts its usage with bacteria and yeast.
+
+#### Hard coded variables
 Some variables are hard coded in to python script. 
 (a) Adapter sequence for `cutadapt`  is _CTGTAGGCACCATCAAT_. Locates in `Pipeline_part_1.py` function **cutAdapt()**.
 (b) Chromosome names (I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII, XIII, XIV, XV, XVI, Mito) must be compatible with Genome.fa and Genome.gtf.    
