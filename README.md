@@ -4,7 +4,7 @@ Collection of routines for processing **Ribo-Seq** data joined into Python pipel
 
 The first part of pipeline  starts with _fastq_ preprocessing continues with aligning reads to genome, mapping ribosome positions (uncorrected) and ends with producing metagene plots around start and stop codons. 
 
-Second part of pipeline corrects mapped RPF positions according given offsets in the `readlength_offsets.txt` to 5' position of P-Site codon: P-Site assignment. It calculates `codon relative rpm` and `codon relative fold difference` (FD) and adds sequence information like codons in E,P,A-Site; nucleic acid sequence and it's translation extending from A-Site to tunnel (by default 11 amino acids). __FD__ calculation assumes you have Ribo-Seq data for two conditions (A condition; B wild type). Important limitation is that __FD__ calculation can't handle multi-exon genes. This is how far it goes in the moment. 
+Second part of pipeline corrects mapped RPF positions according given offsets in the `readlength_offsets_5-End.txt` to 5' position of P-Site codon: P-Site assignment. It calculates `codon relative rpm` and `codon relative fold difference` (FD) and adds sequence information like codons in E,P,A-Site; nucleic acid sequence and it's translation extending from A-Site to tunnel (by default 11 amino acids). __FD__ calculation assumes you have Ribo-Seq data for two conditions (A condition; B wild type). Important limitation is that __FD__ calculation can't handle multi-exon genes. This is how far it goes in the moment. 
 
 
 ### Prerequisite
