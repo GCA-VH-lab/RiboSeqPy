@@ -12,13 +12,15 @@ Second part of pipeline corrects mapped RPF positions according given offsets in
 
   It's ok to use system python but have you own local version gives more flexibility. I used Anaconda Python v.3.5 from [Continuum](https://www.continuum.io/downloads). It comes with a bunch of libraries and have a nice  package manager `conda`. Before `conda` is able to install bioinformatic libraries/programs you have add the _bioconda_ channel.
   
-``` conda config --add channels bioconda
+``` 
+    conda config --add channels bioconda
 ```
 2) [sra-tools](https://github.com/ncbi/sra-tools/wiki/Downloads) 
           
 3) [cutadapt](https://cutadapt.readthedocs.io/en/stable/)
 
-```conda install cutadapt
+```
+    conda install cutadapt
 ```
 
 4) `pigz` - optional if not installed cutadapt falls back to single core mode
@@ -32,12 +34,14 @@ Second part of pipeline corrects mapped RPF positions according given offsets in
 
 7) [samtools](https://github.com/samtools/samtools/) 
 
-```conda install samtools
+```
+    conda install samtools
 ```
   
 8) [pysam](https://github.com/pysam-developers/pysam)
 
-```conda install pysam
+```
+    conda install pysam
 ```
 
 ### Additional data files
