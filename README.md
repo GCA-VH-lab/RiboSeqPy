@@ -1,5 +1,7 @@
 # RiboSeqPy
 
+> Transferred from personal (github page)[https://github.com/tmargus/RiboSeqPy].  
+
 Collection of routines for processing **Ribo-Seq** data joined into Python pipeline. Our main aim is to analyze changes of translational dynamic between two different conditions in yeast. We estimate differences in codon occupancy between two conditions and looking for context what is likely related to higher/lower codon occupancy.
 
 The first part of pipeline  starts with _fastq_ preprocessing continues with aligning reads to genome, mapping ribosome positions (uncorrected) and ends with producing metagene plots around start and stop codons. 
