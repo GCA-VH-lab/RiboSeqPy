@@ -1,7 +1,6 @@
 # RiboSeqPy
 
-> Transferred from tmargus [github page](https://github.com/tmargus/RiboSeqPy).  
-> Changed to organisation.  
+> Transferred from tmargus [github page](https://github.com/tmargus/RiboSeqPy).   
 
 Collection of routines for processing **Ribo-Seq** data joined into Python pipeline. Our main aim is to analyze changes of translational dynamic between two different conditions in yeast. We estimate differences in codon occupancy between two conditions and looking for context what is likely related to higher/lower codon occupancy.
 
