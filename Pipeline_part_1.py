@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore', category=tables.NaturalNameWarning)
 #! adapted for Python 3
 #! Mapping part is rewritten -> using pysam
 #! Annotation (GTF format) is managed by tabix (comes with pysam)
-#! Metagenomic tables and plots were added
+#! Metagene tables and plots were added
 #! SamtoBam(iX) *.sam -> sorted & indexed *.bam
 #
 # This code requires the following programs to be installed on your computer
@@ -356,12 +356,13 @@ def qualityFilter(SRAList, Names, Params):
     LOG_FILE = open(LogFileName, "wt")
 
     for iX in Names:
-        low_qual     = 0 
-        short_reads  = 0
-        long_reads   = 0
-        Quality      = float(Params["Quality"])
-        read_min_len = int(Params["ReadLenMiN"]) #- fshift
-        read_max_len = int(Params["ReadLenMaX"]) #+ fshift
+        low_qual      = 0
+        short_reads   = 0
+        long_reads    = 0
+        included_reads= 0
+        Quality       = float(Params["Quality"])
+        read_min_len  = int(Params["ReadLenMiN"]) #- fshift
+        read_max_len  = int(Params["ReadLenMaX"]) #+ fshift
         # done: crashes when 2-Trimmed/Reports/*.txt does not exists - happens when you start already trimmed input
         Length = ""
         cutadapt_report = "2-Trimmed/Reports/" + iX + ".txt"
@@ -373,12 +374,14 @@ def qualityFilter(SRAList, Names, Params):
             print("{} adapters removed elsewhere! \n".format(iX))
         else:
             File = open(cutadapt_report)
-            # todo: cutadapt version inconsistency - new version have 1 more line _- range(0,9) instead (0,8)
+            # todo: cutadapt version inconsistency - new version have 1 more line
+            # todo: new version - range(0,9)
+            # todo: old version - range(0,8)
             Burn = [File.readline() for Idx in range(0, 9)]
             Length = int(Burn[-1][:-1].split(" ")[-1].replace(",", ""))
             File.close()
 
-        report = " {:18} : {:>12,}".format(iX, Length); print(report)
+        report = " {:16}: {:>12,}".format(iX, Length); print(report)
         LOG_FILE.write(report + "\n")
 
         File    = gzip.open("2-Trimmed/" + iX + ".fastq.gz", "rt")
@@ -403,6 +406,7 @@ def qualityFilter(SRAList, Names, Params):
                     Score   = Score*(1 - PHREDDict[PHRED[IdxL]])
 
                 if (Score > Quality):
+                    included_reads += 1
                     FileOut.write(Identifier + "\n" + Sequence + "\n" + QIdentifier + "\n" + PHRED + "\n")
                 else:
                     low_qual +=1
@@ -412,7 +416,7 @@ def qualityFilter(SRAList, Names, Params):
         report  = " Reads len < {:>3} : {:>12,}\n".format(read_min_len, short_reads)
         report += " Reads len > {:>3} : {:>12,}\n".format(read_max_len, long_reads)
         report += " Quality   < {:>3} : {:>12,}\n".format(Quality, low_qual)
-        report += " Reads left      : {:>12,}".format(Length - (short_reads + low_qual))
+        report += " Reads left      : {:>12,}".format(included_reads)
 
         print(report, "\n"); LOG_FILE.write(report + "\n\n")
 
@@ -458,7 +462,7 @@ def genomeAlign(SRAList, Names, Params):
         Output  = "5-Aligned/" + iX + ".sam"
         NotAli  = "5-Aligned/" + iX + "_unaligned.fastq"  # added! unalinged reads output
         
-        Hisat2  = ["hisat2", "--no-unal", "-p", Params['cpu'], "--no-softclip", "--dta", "-x", Genome, "-U", Input, "-S", Output]
+        Hisat2  = ["hisat2", "--no-unal", "-p", Params['cpu'], "-k", "2", "--no-softclip", "--dta", "-x", Genome, "-U", Input, "-S", Output]
         # IF reads not aligned to genome also needed ncomment line bleow
         #Hisat2 = ["hisat2", "-p 6", "--no-softclip", "--dta", "--un", NotAli, "-x", Genome, "-U", Input, "-S", Output]
         print(Hisat2)

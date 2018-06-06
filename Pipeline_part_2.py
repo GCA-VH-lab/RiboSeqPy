@@ -563,20 +563,26 @@ def codonTablesA(SRAList, Names, Params):
         fn_body = fn_body + str(min(rl_l)) + "-" + str(max(rl_l))
 
         # read data in
-        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
+        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_iv_assign_rpm.h5"
         storage = pd.HDFStore(infile_h5, "r")
 
         # output file
         outfile_name = "11-codonTables/" + fn_body + "_codon_table_A.txt"
-        outfile = open(outfile_name, 'w')
-
+        # check file
+        if os.path.isfile(outfile_name):
+            message = "File exists {}\n Skipping !".format(outfile_name)
+            print(message)
+            LOGFILE.write(message + "\n")
+            continue
+        else:
+            outfile = open(outfile_name, 'w')
         # ... for library depth
         # enables to specify it  - runs faster - default is 0
         norm_factor = 0  # if 0  estimates from BAM file.
         if norm_factor == 0:
             BamFile = "5-Aligned/" + iN + ".bam"
             print("\n\tProcessing ... {} \n".format(BamFile))
-            norm_factor = normalisation_factor_from_bam(BamFile, NHi=1)
+            norm_factor = normalisation_factor_from_bam(BamFile, Params)
         else:  # take a given value
             pass
 
@@ -768,18 +774,22 @@ def codonTablesB(SRAList, Names, Params):
         tabixfile = pysam.TabixFile(annotation, parser=pysam.asGTF())
         # nucleotides before P-site
         nt = int(Params["CodonsBeforePSite"]) * 3
-        # whole nucleotide seq length -  part of file name
-        sl = str(33 + nt)
         # read length from offsets file
         rl_l = readlen_list_from_offset(Params["OffsetFile"], iN)
         # file name body
         fn_body = iN + "_" + Mapping + "-End_"
         fn_body = fn_body + str(min(rl_l)) + "-" + str(max(rl_l))
 
-        outfile_name = "11-codonTables/" + fn_body + "_codon_table_B_" + sl + ".txt"
-        outfile = open(outfile_name, 'w')
+        outfile_name = "11-codonTables/" + fn_body + "_codon_table_B.txt"
+        if os.path.isfile(outfile_name):
+            message = "File exists {}\n Skipping !".format(outfile_name)
+            print(message)
+            LOGFILE.write(message + "\n")
+            continue
+        else:
+            outfile = open(outfile_name, 'w')
         # read data in
-        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_assign_rpm.h5"
+        infile_h5 = "9-Assigncorr/" + fn_body + "_idx_iv_assign_rpm.h5"
         storage = pd.HDFStore(infile_h5, "r")
 
         # codon counters - not used jet
@@ -792,7 +802,7 @@ def codonTablesB(SRAList, Names, Params):
         if norm_factor == 0:
             BamFile = "5-Aligned/" + iN + ".bam"
             print("\n\tProcessing ... {} \n".format(BamFile))
-            norm_factor = normalisation_factor_from_bam(BamFile, NHi=1)
+            norm_factor = normalisation_factor_from_bam(BamFile, Params)
         else:  # take a given value
             pass
 
@@ -986,7 +996,14 @@ def masterTable(SRAList, Names, Params):
 
     Mapping = Params["Mapping"]
     nt = int(Params["CodonsBeforePSite"]) * 3
-    sl = str(33 + nt) # whole nucleotide seq length -  part of file name
+    logfile_name = "12-MasterTables/Reports/MasterTable.log"
+
+    if os.path.exists(logfile_name):
+        append_write = 'a'  # append if already exists
+    else:
+        append_write = 'w'  # make a new file if not
+
+    LOGFILE = open(logfile_name, append_write)
 
     # list of sample names
     ListA = [x.strip(' ') for x in Params["GroupA"].split(sep=";")]
@@ -1005,10 +1022,10 @@ def masterTable(SRAList, Names, Params):
         rl_l      = readlen_list_from_offset(Params["OffsetFile"], iNb)
         fn_bodyB += str(min(rl_l)) + "-" + str(max(rl_l))
         # input table names
-        infile_B = "11-codonTables/" + fn_bodyB + "_codon_table_B"+ "_" + sl + ".txt"
+        infile_B = "11-codonTables/" + fn_bodyB + "_codon_table_B" + ".txt"
         infile_A = "11-codonTables/" + fn_bodyA + "_codon_table_A" + ".txt"
         report = "Replica No {}\n  TReated: {}\nunTreated: {}".format(i + 1, iNa, iNb)
-        print(report)
+        print(report); LOGFILE.write(report+ "\n")
         # output file
         outfile_csv        = "12-MasterTables/Master_table_" + iNa + "_" + iNb + ".txt"
         outfile_cleaned_csv= "12-MasterTables/Master_table_" + iNa + "_" + iNb + "_cleaned.txt"
@@ -1026,14 +1043,17 @@ def masterTable(SRAList, Names, Params):
         # Columns convert to int
         col2int = ['Exon', 'No_of_exons', 'gene_1_leftmost', 'gene_1_rigthmost', 'Position_leftmost_1',
                'Position_leftmost_2']
-
-        print("Reading input")
-        # Read files in. produced in step 5_
+        report = "Reading input"
+        print(report)
+        # Read files in. produced in step 5
+        report += "\nunTreated: {}\n".format(infile_B)
         print("unTreated: {}".format(infile_B))
         df_wt = pd.read_table(infile_B)
         print("  Treated: {}".format(infile_A))
+        report += "  Treated: {}\n ...\n".format(infile_A)
         df_tr = pd.read_table(infile_A)
         print("..")
+        LOGFILE.write(report+"\n")
         # replace 0 with NaN's
         columns = ['codon_raw_2', 'codon_rpm_2', 'codon_relative_rpm_2']
         for col in columns:
@@ -1054,7 +1074,8 @@ def masterTable(SRAList, Names, Params):
         final_df = pd.DataFrame(columns=columns_needed)
 
         for ref in yeastChr():  # CHANGE IT
-            print("{:>6s}".format(ref))
+            rep = "{:>6s}".format(ref)
+            print(rep); LOGFILE.write(rep+"\n")
             # split to Frow & Rev because in some cases Position No are overlaping
             # Duplicated Positions appear because of overlapping gene annotation in the same frame
             # For example Genes YBL069W & YBL068W-A  in Chr 'II'
@@ -1086,8 +1107,8 @@ def masterTable(SRAList, Names, Params):
 
             final_df = pd.concat([final_df, result_F[columns_needed]], ignore_index=True)
             final_df = pd.concat([final_df, result_R[columns_needed]], ignore_index=True)
-
-        print("\nSome Final adjustments ...")
+        report = "Some Final adjustments ..."
+        print("\n"+ report); LOGFILE.write(report+"\n")
         # convert some float to int
         final_df[col2int] = final_df[col2int].astype(int)
         # renme some columns
@@ -1097,10 +1118,12 @@ def masterTable(SRAList, Names, Params):
 
         final_df.sort_values('codon_relative_fd', ascending=False, inplace=True)
         # final_df.to_excel("6_Master_table_WT_met_S1S2.xlsx")
-        print("\nSaving results ...")
+        report = "\nSaving results ..."
+        print(report); LOGFILE.write(report + "\n")
+
         final_df.to_csv(outfile_csv, sep='\t')
         report = "\t{}\nCodons included {:>10,}".format(outfile_cleaned_csv, final_df.shape[0])
-        print(report)
+        print(report); LOGFILE.write(report + "\n")
 
         ## do some cleaning
         # using mask to filter out specific len of amino acid sequences
@@ -1114,9 +1137,11 @@ def masterTable(SRAList, Names, Params):
         final_df.to_csv(outfile_cleaned_csv, sep='\t')
 
         report = "\t{}\nCodons included {:>10,}".format(outfile_cleaned_csv, final_df.shape[0])
-        print(report)
+        print(report); LOGFILE.write(report + "\n")
 
     print("\nDone!\n")
+    LOGFILE.write("done! \n")
+    LOGFILE.close()
 
 #---- START helper functions ----#
 def read_FASTA(filename, SplitHeader=True):
