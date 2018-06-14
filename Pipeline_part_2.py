@@ -23,7 +23,6 @@ mpl.use('Agg')      # load backend - server safe
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-#todo: add metagene plot for corected and summarised data
 
 def cleanFile(File, Condition):
     # gZip a file and delete the un-gZipped version!
@@ -587,16 +586,11 @@ def codonTablesA(SRAList, Names, Params):
             pass
 
         # Thresholds
-        #todo: instead of giving specific values give 1 value for example "stringency" -- is not transparent what it means!
-        # ... for gene from Param.in
-        # GeneRpmMeanThr = float(Params["GeneRpmMeanThr"]) # FILTER 1
-        # or set dyamic
-        GeneRpmMeanThr = 0.3 / norm_factor  # FILTER 1
-        # ... for codon
-        # mean of raw counts for codon  - 5/3 = 1.666
-        # CodonRpmMeanThr =  1.666/norm_factor
-        CodonRpmMeanThr = 1.6 / norm_factor  # FILTER 2
-
+        GeneRawMeanThr  = float(Params["GeneRawMeanThr"]) # FILTER 1
+        CodonRawMeanThr = float(Params["CodonRawMeanThr"])# FILTER 2
+        GeneRpmMeanThr  = GeneRawMeanThr / norm_factor  # FILTER 1
+        CodonRpmMeanThr = CodonRawMeanThr / norm_factor # FILTER 2
+            #
         report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmMeanThr: {}".format(iN,norm_factor,
                                                                                     GeneRpmMeanThr,CodonRpmMeanThr)
         LOGFILE.write(report+"\n"); print(report + "\n")
@@ -807,15 +801,10 @@ def codonTablesB(SRAList, Names, Params):
             pass
 
         # Thresholds
-        # todo: istead of giving specific values give 1 value for example "stringency" -- is not transparent what it means!
-        # ... for gene from Param.in
-        # GeneRpmMeanThr = float(Params["GeneRpmMeanThr"]) # FILTER 1
-        # or set dyamic
-        GeneRpmMeanThr = 0.3 / norm_factor  # FILTER 1
-        # ... for codon
-        # mean of raw counts for codon  - 5/3 = 1.666
-        # CodonRpmMeanThr =  1.666/norm_factor
-        CodonRpmMeanThr = 1.6 / norm_factor  # FILTER 2
+        GeneRawMeanThr = float(Params["GeneRawMeanThr"])  # FILTER 1
+        CodonRawMeanThr = float(Params["CodonRawMeanThr"])  # FILTER 2
+        GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1
+        CodonRpmMeanThr = CodonRawMeanThr / norm_factor  # FILTER 2
 
         report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmMeanThr: {}".format(iN, norm_factor,
                                                                                                   GeneRpmMeanThr,
@@ -1072,7 +1061,12 @@ def masterTable(SRAList, Names, Params):
         df_wt['Position'] = df_wt['Position_leftmost_2']
         # Create DF for collectiong subframes
         final_df = pd.DataFrame(columns=columns_needed)
-
+        #
+        #todo: Rewrite to use index (gene_treated_leftmost) for joining tables.
+        #todo: df1['index_col']=df1['Gene_id_treated']+"_"+df1['Position_leftmost_1'].astype(str)
+        #todo: df1.set_index('index_col', inplace=True)
+        #todo: dont hav to care about strand and Chr
+        #
         for ref in yeastChr():  # CHANGE IT
             rep = "{:>6s}".format(ref)
             print(rep); LOGFILE.write(rep+"\n")
@@ -1214,7 +1208,7 @@ def df_framing(df1, index, columns, strand="+"):
         # error
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
 
-
+#todo: the same as dfTimmX5 - remove one !!
 def dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 3pr"""
     if (inside_gene > Span) | (outside_gene > Span):

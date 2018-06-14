@@ -126,6 +126,24 @@ def parseParams(Path):
 
 
 def downloadData(SRAList, NameList, Params):
+
+    makeDirectory("1-Raw")
+    message = "Automatic downlouding FastQ files from ArrayExpress is not implemented yet.\n" \
+              "Use accession number E-MTAB-6938 to retrieve Ribo-Seq fastq files from  \nwww.ebi.ac.uk/arrayexpress" \
+              "Unpack them and put under folder 1-Raw\n" \
+              "Rename files to match with names at the end of Param.in (second column)\n" \
+              "Sample 1 (S1) - WTS1.fastq \n" \
+              "Sample 2 (S2) - MetS2.fastq\n" \
+              "Sample 3 (S3) - WTS3.fastq\n" \
+              "Sample 4 (S4) - MetS4.fastq\n" \
+              "\n" \
+              "Then run steps 2-8    (check  Param.in)\n" \
+              "python ./Pipline_part1.py\n" \
+              "after that steps 9-12 (changes Param.in)\n" \
+              "python ./Pipline_part1.py\n\n"
+    print(message)
+
+def downloadDataOriginal(SRAList, NameList, Params):
     # Check to see if all the files
     makeDirectory("1-Raw")
 
@@ -137,7 +155,6 @@ def downloadData(SRAList, NameList, Params):
         Move.wait()
         cleanFile("1-Raw/" + NameList[iX] + ".fastq", Params["Clean"]) # original
         #cleanFile("1-Raw/" + NameList[iX] + ".fastq", "bgzip")
-
 
 def update_df(df, Chr, strand):
     df.fillna(0, inplace=True)

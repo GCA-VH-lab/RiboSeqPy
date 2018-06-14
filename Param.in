@@ -7,13 +7,13 @@
 # \\  4 - Remove sequences that align to non-coding RNAs from the filtered FASTQ files
 # \\  5 - Align sequences to the genome from the ncRNA subtracted FASTQ files
 # \\  6 - Create Raw Assignment from the genome aligned sorted/indexed BAM file
-# \\  7 - Create Metagenomic tables
-# \\  8 - Create Metagenomic plots
-# \\  ------------ Pipeline Part 1 end   -----------------
-# \\  ------------ Pipeline Part 2 start -----------------
+# \\  7 - Create Metagene tables
+# \\  8 - Create Metagene plots
+# \\  ------------ Pipeline part 1 end   -----------------
+# \\  ------------ Pipeline part 2 start -----------------
 # \\  9 - Corrected assignment
-# \\ 10 - Metagenomic tables from corrected assignment
-# \\ 11 - Create Metagenomic plots from corrected assignemnt
+# \\ 10 - Metagene tables from corrected assignment
+# \\ 11 - Create Metagene plots from corrected assignemnt
 # \\ 12 - Codon Tables for conditions A & B
 # \\ 13 - Master Tables for all replicas
 #
@@ -27,10 +27,10 @@
 #
 # \\ Quality filter threshold for retaining reads (0.0 - 1.0). Higher is more selective.
 #
-# Mapping: 3
+# Mapping: 5
 #
 # \\ 5 - Map reads according to their 5' end
-# \\ 3 - Map reads according to their 3' end
+# \\ 3 - Map reads according to their 3' end   - Steps 9-13 are not checked !
 #
 # ReadLenMiN: 25
 # ReadLenMaX: 35
@@ -43,7 +43,7 @@
 # \\ rpm - use normalized data - reads per miljon
 # \\ raw - raw counts
 #
-# MappedTwice: Yes
+# MappedTwice: No
 #
 #  \\ No or Yes IF Yes include reads mapped once and twice
 #
@@ -61,17 +61,14 @@
 #
 # \\ 90 - number of nucleotides before and after start/stop in metagenomic profile from corrected data
 #
-# GeneRpmMeanThr: 0.005
 #
-# \\ is overwritten by hard coded formula   GeneRpmMeanThr = 0.3 / norm_factor  # FILTER 1  - low threshold
+# GeneRawMeanThr: 0.3
+# \\ GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1  - low threshold
+# \\ FILTER 1  - is used in functions codonTablesA & codonTablesB 
 #
-# GeneRpmMeanThr2: 0.005
+# CodonRawMeanThr: 1.6
+# \\ FILTER 2  - is used in functions codonTablesA & codonTablesB 
 #
-# \\ Threshold for RNAseq  normalised RiboSeq  (rpm/rpm)  # FILTER 6  - low threshold
-#
-# CodonRpmMeanThr: 0.1
-#
-# \\ is overwritten by hard coded formula   CodonRpmMeanThr = 1.6 / norm_factor  # FILTER 2  - more restrictive
 #
 # OffsetFile: readlength_offsets_5-End.txt
 #
@@ -79,7 +76,7 @@
 #
 # cpu: 6
 #
-# \\ number of cores - have effect for some steps
+# \\ number of cores - have effect in some steps
 #
 #
 # \\ Groups
@@ -90,13 +87,13 @@
 # \\              Replica 2 -  S2, S4
 # \\ Sample names in groups must be same as they are in  SRR2046309	wtS1
 #
-# GroupA: MetS2;MetS4
+# GroupA: MetS2_1m;MetS4_1m
 #
 # \\ Names of semicolon ";" separated samples incubated under specific conditions TREATED
 # \\ S1;S2
 #
 #
-# GroupB: WTS1;WTS3
+# GroupB: WTS1_1m;WTS3_1m
 #
 # \\ Names of semicolon ";" separated samples used as CONTROL
 # \\ S3;S4
@@ -109,9 +106,8 @@
 # \\ 2 - A-site + one codon before
 #
 # \\ SRR0000001,2,3,4 are fake SRRs. You can use
-#SRR0000001	WTS1_20m
-#SRR0000004	WTS3_20m
-#SRR0000002	MetS2_20m
 
-SRR0000005	MetS4_20m
-
+SRR0000001	WTS1_1m
+SRR0000004	WTS3_1m
+SRR0000002	MetS2_1m
+SRR0000005	MetS4_1m
