@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 #
-# assumes *.h5 conains all positions in index for each chr
-# it is not practical but works for yeast
-#
 import sys
 import argparse
 import pandas as pd
-#import numpy as np
 
 parser = argparse.ArgumentParser(description='Converts Ribo-Seq coverage to bedgraph format.')
 parser.add_argument('-iN', type=str, help='Sample name')
