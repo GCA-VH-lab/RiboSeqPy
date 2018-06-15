@@ -65,7 +65,6 @@ def cleanFile(File, Condition):
     if Condition == "rm":
         sp.Popen(["rm", File])
 
-
 def makeDirectory(Path):
 
 # Check if a folder named exists at Path. If not, create it!
@@ -83,7 +82,6 @@ def makeDirectory(Path):
         Make = sp.Popen(["mkdir", Path])
         Make.wait()
 
-
 def SamToBam(iX):
     
 # sort and convert SAM -> BAM + index
@@ -100,7 +98,6 @@ def SamToBam(iX):
     IndexBam.wait()
     
     cleanFile(SamFile, "rm")
-
 
 def parseParams(Path):
 
@@ -124,7 +121,6 @@ def parseParams(Path):
 
     return ParamDict, SRAList, Names
 
-
 def downloadData(SRAList, NameList, Params):
 
     makeDirectory("1-Raw")
@@ -143,6 +139,7 @@ def downloadData(SRAList, NameList, Params):
               "python ./Pipline_part1.py\n\n"
     print(message)
 
+# use this when data becomes available
 def downloadDataOriginal(SRAList, NameList, Params):
     # Check to see if all the files
     makeDirectory("1-Raw")
@@ -167,14 +164,12 @@ def update_df(df, Chr, strand):
 
     return df[columns]
 
-
 def not_enough_data(df, Threshold=12):
     '''True when Not enough data
     Assumes numeric columns only
     Project: Yeast-eEF3
     '''
     return True if df.sum().sum() < Threshold else False
-
 
 def reads_count_in_bam(BamName, Params):
 
@@ -203,7 +198,6 @@ def raw_metag_threshold_to_rpm(BamName, Threshold, Params):
 
     return Threshold/normalisation_factor_from_bam(BamName, Params)
 
-
 def df_framing(df1, index, columns, strand="+"):
     """ returns df what contains values for all positions in the given range.
     Original df is condensed, i. e. positions with values < 0 not included
@@ -228,21 +222,6 @@ def df_framing(df1, index, columns, strand="+"):
         # error
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
 
-
-def dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=18):
-    """Truncates Data Frame to fit in figure 3pr"""
-    if (inside_gene > Span) | (outside_gene > Span):
-        print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
-        return df
-    if iX == "Start":
-        return df.loc[-outside_gene:inside_gene, ]
-    elif iX == "Stop":
-        return df.loc[-inside_gene:outside_gene, ]
-    else:
-        print("Table is not modified. Mapping is unkown!")
-        return df
-
-
 def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 5pr """
     if (inside_gene > Span) | (outside_gene > Span):
@@ -257,7 +236,6 @@ def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
         print("Table is not modified. Mapping is unkown!")
         return df
 
-
 def colorsCheck(dic, key):
     # import numpy.random as rn
     '''Generates random color for missing key'''
@@ -267,7 +245,6 @@ def colorsCheck(dic, key):
         dic[key] = tuple(l)  # list 2 tuple
 
     return dic
-
 
 def restructurate_hd5(infile, outfile, close_outfile=True):
     """ infile.h5 keys - "/For_raw", "/Rev_raw", ...
@@ -306,7 +283,6 @@ def restructurate_hd5(infile, outfile, close_outfile=True):
         outp_h5.close()
     else:
         return outp_h5
-
 
 def yeastChr():
     # Ordered yeast Chr list short names from ensembl
@@ -878,11 +854,10 @@ def metagPlotspdf(SRAList, Names, Params):
                     df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=21)
                 elif (Mapping == '5') & (iX == "Stop"):
                     df = dfTrimmiX5(df, Span, iX, inside_gene=60, outside_gene=3)
-
                 elif (Mapping == '3') & (iX == "Start"):
-                    df = dfTrimmiX3(df, Span, iX, inside_gene=60, outside_gene=3)
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=60, outside_gene=3)
                 elif (Mapping == '3') & (iX == "Stop"):
-                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=30)
+                    df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=30)
                 else:
                     pass
 
