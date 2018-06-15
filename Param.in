@@ -17,7 +17,7 @@
 # \\ 12 - Codon Tables for conditions A & B
 # \\ 13 - Master Tables for all replicas
 #
-# Clean: bgzip
+# Clean: gzip
 #
 # \\ bgzip - Gzip files after they are no longer necessary using multiple threads - 6 is hard coded
 # \\ gzip  - Gzip files after they are no longer necessary
@@ -35,8 +35,8 @@
 # ReadLenMiN: 25
 # ReadLenMaX: 35
 #
-# \\ 20 - ReadLenMiN length of reads included -! going to replace Length
-# \\ 34 - ReadLenMaX length of reads included -! going to replace Length
+# \\ 25 - ReadLenMiN length of reads included -! going to replace Length
+# \\ 35 - ReadLenMaX length of reads included -! going to replace Length
 #
 # Normalised: rpm
 #
@@ -63,14 +63,16 @@
 #
 #
 # GeneRawMeanThr: 0.3
+#
+# \\ FILTER 1  - is used in functions codonTablesA & codonTablesB
+# \\ converted to GeneRpmMeanThr
 # \\ GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1  - low threshold
-# \\ FILTER 1  - is used in functions codonTablesA & codonTablesB 
 #
 # CodonRawMeanThr: 1.6
-# \\ FILTER 2  - is used in functions codonTablesA & codonTablesB 
+# \\ FILTER 2  - is used in functions codonTablesA & codonTablesB
 #
 #
-# OffsetFile: readlength_offsets_5-End.txt
+# OffsetFile: readlength_offsets_eEF3.txt
 #
 # \\ file with read length and offsets - only these readlength are included into corrected/final assignment
 #
