@@ -1,4 +1,4 @@
-	WTS1	MetS2	WTS3	MetS4_20m
+	WTS1_1m	MetS2_1m	WTS3_1m	MetS4_1m
 25	nan	nan	nan	nan
 26	nan	nan	nan	nan
 27	nan	nan	nan	nan
@@ -6,7 +6,7 @@
 29	nan	nan	nan	nan
 30	14	14	13	nan
 31	14	14	14	nan
-32	14	14	14	-18
-33	14	14	14	-18
-34	nan	15	nan	-18
-35	nan	nan	nan	-19
+32	14	14	14	13
+33	14	14	14	14
+34	nan	15	nan	15
+35	nan	nan	nan	15
