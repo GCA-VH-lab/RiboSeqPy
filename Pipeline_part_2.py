@@ -42,7 +42,6 @@ def cleanFile(File, Condition):
     if Condition == "rm":
         sp.Popen(["rm", File])
 
-
 def makeDirectory(Path):
     # Check if a folder named exists at Path. If not, create it!
 
@@ -58,7 +57,6 @@ def makeDirectory(Path):
     else:
         Make = sp.Popen(["mkdir", Path])
         Make.wait()
-
 
 def parseParams(Path):
     # Open the parameter file and read in parameters and files to operate on
@@ -81,11 +79,9 @@ def parseParams(Path):
 
     return ParamDict, SRAList, Names
 
-
 def yeastChr():
     # Ordered yeast Chr list short names from ensembl
     return ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','Mito']
-
 
 def corrAssignment(SRAList, Names, Params):
     '''
@@ -225,7 +221,6 @@ def corrAssignment(SRAList, Names, Params):
         LOG_FILE.write(report + "\n")
         LOG_FILE.close()
 
-
 def metagTables2(SRAList, Names, Params):
     """From corrected assingments
     data in h5 file with missing lines, i.e. lines without counts are missing
@@ -290,7 +285,7 @@ def metagTables2(SRAList, Names, Params):
         else:
             pass
 
-        report = "Metagenomic threshold {:.1f} {}".format(Threshold, dataNorm)
+        report = "Metagene   threshold {:.1f} {}".format(Threshold, dataNorm)
         print(report); LOG_FILE.write(report + "\n")
 
         for Chr in yeastChr():
@@ -385,7 +380,6 @@ def metagTables2(SRAList, Names, Params):
 
     LOG_FILE.close()
 
-
 def metagPlotsCorrpdf(SRAList, Names, Params):
     #
     #
@@ -445,15 +439,10 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
 
                 # Adjust plot for mapping and Start/Stop
 
-                if (Mapping == '5') & (iX == "Start"):
+                if  iX == "Start":
                     df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=18)
-                elif (Mapping == '5') & (iX == "Stop"):
+                elif iX == "Stop":
                     df = dfTrimmiX5(df, Span, iX, inside_gene=39, outside_gene=18)
-
-                elif (Mapping == '3') & (iX == "Start"):
-                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=18)
-                elif (Mapping == '3') & (iX == "Stop"):
-                    df = dfTrimmiX3(df, Span, iX, inside_gene=39, outside_gene=18)
                 else:
                     pass
 
@@ -509,7 +498,6 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
                 print("Missing InFile -> {}".format(infile))
     print("\n")
 
-
 def codonTablesA(SRAList, Names, Params):
 
     makeDirectory("11-codonTables")
@@ -530,10 +518,6 @@ def codonTablesA(SRAList, Names, Params):
     missing_keys = [] # check
 
     Mapping = Params["Mapping"]  # Mapping 5 or 3 prime end
-    if Mapping == "3":
-        message = "\nWARNINGS!\n   3' Mapping is not implemented yet !\n"
-        LOGFILE.write(message + "\n")
-        sys.exit(message)
 
     # Generates dic {gene_id: number_of_exons}
     gene_ids_exon_No = {}
@@ -720,7 +704,6 @@ def codonTablesA(SRAList, Names, Params):
 
     LOGFILE.close()
 
-
 def codonTablesB(SRAList, Names, Params):
 
     makeDirectory("11-codonTables")
@@ -741,12 +724,6 @@ def codonTablesB(SRAList, Names, Params):
     missing_keys = [] # check
 
     Mapping = Params["Mapping"]  # Mapping 5 or 3 prime end
-
-    # todo: check 3' mapping
-    if Mapping == "3":
-        message = "\nWARNINGS!\n   3' Mapping is not implemented yet !\n"
-        LOGFILE.write(message + "\n")
-        sys.exit(message)
 
     # todo: include  multi-exon genes
     # Generates dic {gene_id: number_of_exons}
@@ -970,13 +947,11 @@ def codonTablesB(SRAList, Names, Params):
 
     LOGFILE.close()
 
-
 def codonTablesAB(SRAList, Names, Params):
     # running functions for  tables A and B
 
     codonTablesA(SRAList, Names, Params)
     codonTablesB(SRAList, Names, Params)
-
 
 def masterTable(SRAList, Names, Params):
     #
@@ -1137,7 +1112,7 @@ def masterTable(SRAList, Names, Params):
     LOGFILE.write("done! \n")
     LOGFILE.close()
 
-#---- START helper functions ----#
+#---- Helper functions ----#
 def read_FASTA(filename, SplitHeader=True):
     """ Reads FastA file and returns a list of tuples, where first
     part is a list of header elements and second seq as a string
@@ -1168,7 +1143,6 @@ def read_FASTA(filename, SplitHeader=True):
                     [entry.partition('\n')
                      for entry in file.read().split('>')[1:]]]
 
-
 def read_FASTA_dictionary(filename, SplitHeader=False):
     """ Creates dictionary from FastA file, where key is gi-number and value is seq
 
@@ -1182,7 +1156,6 @@ def read_FASTA_dictionary(filename, SplitHeader=False):
     "Bioinformatics Programming Using Python by Mitchell L Model"
     """
     return {info: seq for info, seq in read_FASTA(filename, SplitHeader=False)}
-
 
 def df_framing(df1, index, columns, strand="+"):
     """ returns df what contains values for all positions in the given range
@@ -1208,21 +1181,6 @@ def df_framing(df1, index, columns, strand="+"):
         # error
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
 
-#todo: the same as dfTimmX5 - remove one !!
-def dfTrimmiX3(df, Span, iX, inside_gene=33, outside_gene=18):
-    """Truncates Data Frame to fit in figure 3pr"""
-    if (inside_gene > Span) | (outside_gene > Span):
-        print("Given parameters inside- or outside gene are bigger than Span!\nQuering out of range data!")
-        return df
-    if iX == "Start":
-        return df.loc[-outside_gene:inside_gene, ]
-    elif iX == "Stop":
-        return df.loc[-inside_gene:outside_gene, ]
-    else:
-        print("Table is not modified. Mapping is unkown!")
-        return df
-
-
 def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 5pr """
     if (inside_gene > Span) | (outside_gene > Span):
@@ -1237,7 +1195,6 @@ def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
         print("Table is not modified. Mapping is unkown!")
         return df
 
-
 def colorsCheck(dic, key):
     # import numpy.random as rn
     '''Generates random color for missing key'''
@@ -1247,7 +1204,6 @@ def colorsCheck(dic, key):
         dic[key] = tuple(l)  # list 2 tuple
 
     return dic
-
 
 def restructurate_hd5(infile, outfile, close_outfile=True):
     """ infile.h5 keys - "/For_raw", "/Rev_raw", ...
@@ -1287,20 +1243,17 @@ def restructurate_hd5(infile, outfile, close_outfile=True):
     else:
         return outp_h5
 
-
 def translate_DNA_codon(codon):
     ''' Translates DNA triplet to amino acid (20) by using single
     lettr code where underline "_" corresponds to STOP codon.
     '''
     return DNA_codon_table[codon]
 
-
 def aa_generator_DNA(dnaseq):
     """Return a generator object that produces an amino acid by translating
     the next three characters of dnaseq each time next is called on it"""
     return (translate_DNA_codon(dnaseq[n:n+3])
             for n in range(0, len(dnaseq), 3))
-
 
 def translate_DNA(dnaseq):
     """Translate dnaseq into amino acid symbols"""
@@ -1313,7 +1266,6 @@ def translate_DNA(dnaseq):
         aa = next(gen, None)
     return seq
 
-
 DNA_codon_table = {
     'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M', 'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
     'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K', 'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
@@ -1325,7 +1277,6 @@ DNA_codon_table = {
     'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_', 'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'
 }
 
-
 def complement(seq):
     ''' Returns complament sequence of DNA
         Expects DNA string as input
@@ -1335,12 +1286,10 @@ def complement(seq):
                       'a':'t','c':'g','g':'c','t':'a','y':'r','r':'y','m':'k','k':'m','w':'w','v':'b','b':'v','h':'d','d':'h','n':'n' }
     return ''.join([basecomplement[base] for base in seq])
 
-
 def revcompl(seq):
     ''' returns inverted string of complament DNA
     '''
     return complement(seq[::-1])
-
 
 def gene_region_normalisation_factor(df, gene_beg, gene_end, column='sum', method='mean'):
     '''
@@ -1383,7 +1332,6 @@ def gene_region_normalisation_factor(df, gene_beg, gene_end, column='sum', metho
         print("method_Error in function gene_region_normalisation_factor()!!!\nNo proter method was provided.")
         print("Valid methods are: 'mean', 'sum' & 'max'\n")
 
-
 def select_gene_region_norm_factor(norm_factors_coll, Position_leftmost, left_most, right_most, strand="+"):
     """
     norm_factors_coll:  tuple of normalisation factors for gene regions"""
@@ -1400,7 +1348,6 @@ def select_gene_region_norm_factor(norm_factors_coll, Position_leftmost, left_mo
         return norm_factors_coll[2] if strand == "+" else norm_factors_coll[0]
     else:  # it can't hapen but anyway
         print("ERROR! Position {} is out of range {}\t{}".format(Position_leftmost, left_most, right_most + 3))
-
 
 def gene_normalisation_factor(df, gene_beg, gene_end, column='sum', method='mean'):
     '''
@@ -1428,7 +1375,6 @@ def gene_normalisation_factor(df, gene_beg, gene_end, column='sum', method='mean
         print("method_Error in function gene_region_normalisation_factor()!!!\nNo proter method was provided.")
         print("Valid methods are: 'mean', 'sum' & 'median'\n")
 
-
 def reads_count_in_bam(BamName, Params):
 
     bamfile = pysam.AlignmentFile(BamName, "rb")  # open BAM filee
@@ -1442,17 +1388,14 @@ def reads_count_in_bam(BamName, Params):
         report = "No of reads mapped once {:,}".format(len(l))
         return len(l)
 
-
 def normalisation_factor_from_bam(BamName, Params):
     return reads_count_in_bam(BamName, Params) / (10 ** 6)
-
 
 def raw_metag_threshold_to_rpm(BamName, Threshold, Params):
     """
     Converts raw MetagThresold to rpm MetagThreshold
     """
     return Threshold/normalisation_factor_from_bam(BamName, Params)
-
 
 def readlen_list_from_offset(OffsetFile, iN):
     '''returns list of readlength from offset files for specified sample'''
@@ -1462,25 +1405,27 @@ def readlen_list_from_offset(OffsetFile, iN):
 
     return list(readlen_and_offsets.keys())
 
-
 def do(collection, fn):
     '''  Generalized do function
     '''
     for item in collection:
         fn(item)
 
-
 def print_collection(collection):
     ''' Generalized print_collection function
     '''
     do(collection, print)
 
-
 def print_params(Params):
     print_collection(("{:15s}- {}".format(k, Params[k]) for k in sorted(Params)))
 
 
-
+# todo: from step 10 folder numbers become shifted
+# step 11  folder  10-corrMetagTbl/MetagPlot/
+# step 12  folder  11-codonTables
+# step 13  folder  12-MasterTables
+# todo: correct folder names to fit with step numbers
+#
 Params, SRAs, Names = parseParams("Param.in")
 Options = {9: corrAssignment, 10: metagTables2, 11:metagPlotsCorrpdf, 12: codonTablesAB, 13: masterTable}
 Start = time.time()

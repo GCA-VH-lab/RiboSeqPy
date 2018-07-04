@@ -17,7 +17,7 @@ Second part of pipeline corrects mapped RPF positions according given offsets in
 ``` 
     conda config --add channels bioconda
 ```
-2) [sra-tools](https://github.com/ncbi/sra-tools/wiki/Downloads) 
+2) [wget](http://www.gnu.org/software/wget/) There is a detail [installation guide](https://coolestguidesontheplanet.com/install-and-configure-wget-on-os-x/) for OS-X. I would recommend precompiled binaries from [Rudix](http://rudix.org/packages/wget.html) site.
           
 3) [cutadapt](https://cutadapt.readthedocs.io/en/stable/)
 

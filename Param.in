@@ -1,4 +1,4 @@
-# Start: 2
+# Start: 1
 # Stop:  8
 #
 # \\  1 - Download the data
@@ -30,7 +30,7 @@
 # Mapping: 5
 #
 # \\ 5 - Map reads according to their 5' end
-# \\ 3 - Map reads according to their 3' end   - Steps 9-13 are not checked !
+# \\ 3 - Map reads according to their 3' end   - Steps 9-13 are not checked yet !
 #
 # ReadLenMiN: 25
 # ReadLenMaX: 35
@@ -63,13 +63,16 @@
 #
 #
 # GeneRawMeanThr: 0.3
-#
+# \\ 0.3  ->  30 raw counts per 100 nt  - low threshold
 # \\ FILTER 1  - is used in functions codonTablesA & codonTablesB
 # \\ converted to GeneRpmMeanThr
-# \\ GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1  - low threshold
+# \\ GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1
 #
 # CodonRawMeanThr: 1.6
+# \\ 1.666 ->  6 raw counts per codon  - more strict than previous
 # \\ FILTER 2  - is used in functions codonTablesA & codonTablesB
+# \\ converted to CodonRpmMeanThr
+# \\ CodonRpmMeanThr = CodonRawMeanThr / norm_factor  # FILTER 2
 #
 #
 # OffsetFile: readlength_offsets_eEF3.txt
@@ -84,18 +87,17 @@
 # \\ Groups
 # \\ Group refers to samples of different replicas but same conditions
 # \\ Replica is defined as order of sample names under Group
-# \\ An Example. GroupA  S1;S2   GroupB S3;S4
-# \\              Replica 1 -  S1, S3
-# \\              Replica 2 -  S2, S4
-# \\ Sample names in groups must be same as they are in  SRR2046309	wtS1
+# \\ An Example. GroupA  S2;S4   GroupB S1;S3
+# \\              Replica 1 -  S1, S2
+# \\              Replica 2 -  S3, S4
 #
-# GroupA: MetS2_1m;MetS4_1m
+# GroupA: MetS2;MetS4
 #
 # \\ Names of semicolon ";" separated samples incubated under specific conditions TREATED
 # \\ S1;S2
 #
 #
-# GroupB: WTS1_1m;WTS3_1m
+# GroupB: WTS1;WTS3
 #
 # \\ Names of semicolon ";" separated samples used as CONTROL
 # \\ S3;S4
@@ -107,9 +109,8 @@
 # \\ 1 - A-site included (default)
 # \\ 2 - A-site + one codon before
 #
-# \\ SRR0000001,2,3,4 are fake SRRs. You can use
 
-SRR0000001	WTS1_1m
-SRR0000004	WTS3_1m
-SRR0000002	MetS2_1m
-SRR0000005	MetS4_1m
+ERR2660262	WTS1
+ERR2660266	MetS2
+ERR2660263	WTS3
+ERR2660267	MetS4

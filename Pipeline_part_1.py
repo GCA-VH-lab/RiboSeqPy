@@ -37,7 +37,7 @@ warnings.filterwarnings('ignore', category=tables.NaturalNameWarning)
 #
 # This code requires the following programs to be installed on your computer
 #
-# 1) sra-tools (https://github.com/ncbi/sra-tools/wiki/Downloads)
+# 1) wget      (https://coolestguidesontheplanet.com/install-and-configure-wget-on-os-x/) # v 1.18  for OSX
 # 2) cutadapt  (https://cutadapt.readthedocs.io/en/stable/)   #	v 1.15 parallel version    % conda install cutadapt
 # 3) hisat2    (ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads)   version 2.0.5 or higher
 # 4) bowtie2   (http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
@@ -121,7 +121,7 @@ def parseParams(Path):
 
     return ParamDict, SRAList, Names
 
-def downloadData(SRAList, NameList, Params):
+def downloadDataNotReady(SRAList, NameList, Params):
 
     makeDirectory("1-Raw")
     message = "Automatic downlouding FastQ files from ArrayExpress is not implemented yet.\n" \
@@ -140,7 +140,7 @@ def downloadData(SRAList, NameList, Params):
     print(message)
 
 # use this when data becomes available
-def downloadDataOriginal(SRAList, NameList, Params):
+def downloadDataGEO(SRAList, NameList, Params):
     # Check to see if all the files
     makeDirectory("1-Raw")
 
@@ -150,8 +150,26 @@ def downloadDataOriginal(SRAList, NameList, Params):
 
         Move  = sp.Popen(["mv", SRAList[iX] + ".fastq", "1-Raw/" + NameList[iX] + ".fastq"])
         Move.wait()
-        cleanFile("1-Raw/" + NameList[iX] + ".fastq", Params["Clean"]) # original
-        #cleanFile("1-Raw/" + NameList[iX] + ".fastq", "bgzip")
+        cleanFile("1-Raw/" + NameList[iX] + ".fastq", Params["Clean"])
+
+def downloadDataArrayExpress(SRAList, NameList, Params):
+    # sample table with links to ftp-site douwnlouded from ArrayExpress
+    sample_table = 'E-MTAB-6938.sdrf.txt'
+    a = pd.read_csv(sample_table, sep='\t')['Comment[FASTQ_URI]'].values
+    # Check to see if all the files
+    makeDirectory("1-Raw")
+    makeDirectory("tmp")
+    for iX in range(len(SRAList)):
+        link = [s for s in a if SRAList[iX] in s]
+        link = link[0]  # list 2 string
+        print("Downloading from {}".format(link))
+
+        Wget = sp.Popen(["wget", "-nv", "-P", "tmp/", link], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        Wget.wait()
+        print("Moving to {}".format("1-Raw/" + NameList[iX] + ".fastq.gz"))
+        Move = sp.Popen(["mv", "tmp/" + SRAList[iX] + ".fastq.gz", "1-Raw/" + NameList[iX] + ".fastq.gz"])
+        Move.wait()
+
 
 def update_df(df, Chr, strand):
     df.fillna(0, inplace=True)
@@ -913,8 +931,10 @@ def metagPlotspdf(SRAList, Names, Params):
 
 
 Params, SRAs, Names = parseParams("Param.in")
+NameList = Names
+SRAList = SRAs
 
-Options             = {1:downloadData, 2:cutAdapt, 3:qualityFilter, 4:ncRNASubtract, 5:genomeAlign,
+Options             = {1:downloadDataArrayExpress, 2:cutAdapt, 3:qualityFilter, 4:ncRNASubtract, 5:genomeAlign,
                        6:rawAssignment,7:metagTables, 8:metagPlotspdf
                        }
 Start               = time.time()
