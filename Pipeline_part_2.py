@@ -508,7 +508,7 @@ def codonTablesA(SRAList, Names, Params):
     annotation = "0-References/genome.gtf.gz"
     logfile_name = "11-codonTables/Reports/codonTables_A.log"
 
-    LOGFILE = open(logfile_name, "w")
+    LOGFILE = open(logfile_name, "a")
 
     # genome sequence
     genome = {info: seq for info, seq in read_FASTA(genome_file, SplitHeader=False)}
@@ -561,7 +561,7 @@ def codonTablesA(SRAList, Names, Params):
             outfile = open(outfile_name, 'w')
         # ... for library depth
         # enables to specify it  - runs faster - default is 0
-        norm_factor = 0  # if 0  estimates from BAM file.
+        norm_factor = 0  # if 0  estimates from BAM file. !new1dlr
         if norm_factor == 0:
             BamFile = "5-Aligned/" + iN + ".bam"
             print("\n\tProcessing ... {} \n".format(BamFile))
@@ -570,13 +570,13 @@ def codonTablesA(SRAList, Names, Params):
             pass
 
         # Thresholds
-        GeneRawMeanThr  = float(Params["GeneRawMeanThr"]) # FILTER 1
-        CodonRawMeanThr = float(Params["CodonRawMeanThr"])# FILTER 2
-        GeneRpmMeanThr  = GeneRawMeanThr / norm_factor  # FILTER 1
-        CodonRpmMeanThr = CodonRawMeanThr / norm_factor # FILTER 2
+        GeneRawMeanThr  = float(Params["GeneRawMeanThr"]) # FILTER 1  raw.mean
+        CodonRawThr     = float(Params["CodonRawThr"])    # FILTER 2  raw.sum
+        GeneRpmMeanThr  = GeneRawMeanThr / norm_factor    # FILTER 1  rpm.mean
+        CodonRpmThr     = CodonRawThr / norm_factor       # FILTER 2  rpm.sum
             #
-        report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmMeanThr: {}".format(iN,norm_factor,
-                                                                                    GeneRpmMeanThr,CodonRpmMeanThr)
+        report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmThr: {}".format(iN,norm_factor,
+                                                                                    GeneRpmMeanThr,CodonRpmThr)
         LOGFILE.write(report+"\n"); print(report + "\n")
 
         ###############################
@@ -615,6 +615,7 @@ def codonTablesA(SRAList, Names, Params):
                     if gene_df['sum'].mean() < GeneRpmMeanThr:  # FILTER 1
                         continue
 
+
                     # --------------- #
                     # Forward strand
                     if gtf.strand == '+':
@@ -624,26 +625,30 @@ def codonTablesA(SRAList, Names, Params):
 
                         norm_factors_coll = tuple([x if x > 0 else np.nan for x in collection])  # repl 0 with nan
                         u_rpm = gene_df["sum"].mean()
-                        # todo: consider be consistent taking only CDS and not including STOP codon? left_most+3
                         line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
                                                                                 str(gene_ids_exon_No[gtf.gene_id]),
                                                                                 gtf.strand, gtf.gene_id,
                                                                                 left_most, right_most + 3, u_rpm)
-
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
 
-                            # skip odons with low coverage
-                            if gene_df.loc[iPl:iPl + 2,'sum'].mean() < CodonRpmMeanThr:  # FILTER 2
-                                continue
+                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
 
+                            # skip codons with low coverage
+                            # changes mean  to sum
+                            if codon_rpm < CodonRpmThr:  # FILTER 2 !mean-> sum
+                                continue
+                            if np.isnan(codon_rpm):       # low coverage sum is nan  !mean-> sum
+                                continue
                             gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl, left_most,
                                                                               right_most, strand=gtf.strand)
+                            if np.isnan(gene_norm_factor):                               # low coverage gene_norm_f is nan
+                                continue
+
                             # how much rpms were multiplied to get codon_relative_rpm
                             amplification_factor = 1 / (norm_factor * gene_norm_factor)
 
-                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
-                            codon_raw = int(codon_rpm * norm_factor) # pseudo raw because input is rpm's original raw is gone
+                            codon_raw = int(codon_rpm * norm_factor) # raw calculated from rpm - original raw is gone
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
                             codon_P = genome[ref][iPl:iPl + 3]
@@ -672,17 +677,21 @@ def codonTablesA(SRAList, Names, Params):
 
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
-                            # skip odons with low coverage
-                            if gene_df.loc[iPl:iPl + 2,
-                               'sum'].mean() < CodonRpmMeanThr:  # FILTER 2
-                                continue
 
+                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
+
+                            # skip codons with low coverage
+                            if codon_rpm < CodonRpmThr:   # FILTER 2
+                                continue
+                            if np.isnan(codon_rpm):       # codon sum is nan
+                                continue
                             gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl, left_most,
                                                                               right_most, strand=gtf.strand)
+                            if np.isnan(gene_norm_factor): # gene_norm_factor is nan
+                                continue
 
                             amplification_factor = 1 / (norm_factor * gene_norm_factor)
 
-                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
                             codon_raw = int(codon_rpm * norm_factor)
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
@@ -714,7 +723,7 @@ def codonTablesB(SRAList, Names, Params):
     annotation = "0-References/genome.gtf.gz"
     logfile_name = "11-codonTables/Reports/codonTables_B.log"
 
-    LOGFILE = open(logfile_name, "w")
+    LOGFILE = open(logfile_name, "a")
 
     # genome sequence
     genome = {info: seq for info, seq in read_FASTA(genome_file, SplitHeader=False)}
@@ -778,14 +787,14 @@ def codonTablesB(SRAList, Names, Params):
             pass
 
         # Thresholds
-        GeneRawMeanThr = float(Params["GeneRawMeanThr"])  # FILTER 1
-        CodonRawMeanThr = float(Params["CodonRawMeanThr"])  # FILTER 2
-        GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1
-        CodonRpmMeanThr = CodonRawMeanThr / norm_factor  # FILTER 2
+        GeneRawMeanThr = float(Params["GeneRawMeanThr"])  # FILTER 1 raw.mean
+        CodonRawThr    = float(Params["CodonRawThr"])     # FILTER 2 raw.sum
+        GeneRpmMeanThr = GeneRawMeanThr / norm_factor     # FILTER 1 rpm.mean
+        CodonRpmThr    = CodonRawThr / norm_factor        # FILTER 2 rpm.sum
 
-        report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmMeanThr: {}".format(iN, norm_factor,
+        report = "\n{}\nNormalisation factor: {}\nGeneRpmMeanThr: {}\nCodonRpmThr: {}".format(iN, norm_factor,
                                                                                                   GeneRpmMeanThr,
-                                                                                                  CodonRpmMeanThr)
+                                                                                                  CodonRpmThr)
         LOGFILE.write(report + "\n"); print(report + "\n")
 
         # Change header if changing output lines for gene or codon
@@ -842,17 +851,23 @@ def codonTablesB(SRAList, Names, Params):
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
 
-                            # skipp codons with low coverage
-                            if gene_df.loc[iPl:iPl + 2,'sum'].mean() < CodonRpmMeanThr:  # FILTER 2
+                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
+
+                            # skip codons with low coverage
+                            if codon_rpm < CodonRpmThr:  # FILTER 2
+                                continue
+                            if np.isnan(codon_rpm):  # low coverage sum is nan
+                                continue
+                            gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl, left_most,
+                                                                              right_most, strand=gtf.strand)
+                            if np.isnan(gene_norm_factor):                         # low coverage gene_norm_f is nan
                                 continue
 
                             cP += 1  # counting codons
-                            gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl,
-                                                                              left_most, right_most)
+
                             amplification_factor = 1 / (norm_factor * gene_norm_factor)
 
                             # calculate
-                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
                             codon_raw = int(codon_rpm * norm_factor)
                             codon_relative_rpm = codon_rpm/gene_norm_factor
 
@@ -903,17 +918,24 @@ def codonTablesB(SRAList, Names, Params):
 
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
-                            # skip odons with low coverage
-                            if gene_df.loc[iPl:iPl + 2, 'sum'].mean() < CodonRpmMeanThr:  # FILTER 2
+
+                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
+
+                            # skip codons with low coverage
+                            if codon_rpm < CodonRpmThr:  # FILTER 2
+                                continue
+                            if np.isnan(codon_rpm):  # low coverage sum is nan
+                                continue
+
+                            gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl, left_most,
+                                                                              right_most, strand=gtf.strand)
+                            if np.isnan(gene_norm_factor):  # low coverage gene_norm_f is nan
                                 continue
 
                             cM += 1  # counting codons
-                            gene_norm_factor = select_gene_region_norm_factor(norm_factors_coll, iPl, left_most,
-                                                                              right_most, strand=gtf.strand)
 
                             amplification_factor = 1 / (norm_factor * gene_norm_factor)
 
-                            codon_rpm = gene_df.loc[iPl:iPl + 2, 'sum'].sum()
                             codon_raw = int(codon_rpm * norm_factor)
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
@@ -1427,7 +1449,7 @@ def print_params(Params):
 # todo: correct folder names to fit with step numbers
 #
 Params, SRAs, Names = parseParams("Param.in")
-Options = {9: corrAssignment, 10: metagTables2, 11:metagPlotsCorrpdf, 12: codonTablesAB, 13: masterTable}
+Options = {9: corrAssignment, 10: metagTables2, 11:metagPlotsCorrpdf, 12:codonTablesAB, 13:masterTable, 14:codonTablesA , 15:codonTablesB}
 Start = time.time()
 
 print("\nParameters defined in Param.in:\n")

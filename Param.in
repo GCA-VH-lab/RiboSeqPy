@@ -68,11 +68,11 @@
 # \\ converted to GeneRpmMeanThr
 # \\ GeneRpmMeanThr = GeneRawMeanThr / norm_factor  # FILTER 1
 #
-# CodonRawMeanThr: 1.6
-# \\ 1.666 ->  6 raw counts per codon  - more strict than previous
-# \\ FILTER 2  - is used in functions codonTablesA & codonTablesB
+# CodonRawThr: 4
+# \\ sum of raw counts per codon  -     FILTER 2 
+# \\ used in functions codonTablesA & codonTablesB
 # \\ converted to CodonRpmMeanThr
-# \\ CodonRpmMeanThr = CodonRawMeanThr / norm_factor  # FILTER 2
+# \\ CodonRpmThr = CodonRawThr / norm_factor  # FILTER 2
 #
 #
 # OffsetFile: readlength_offsets_eEF3.txt
