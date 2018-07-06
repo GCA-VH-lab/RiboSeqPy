@@ -585,8 +585,10 @@ def codonTablesA(SRAList, Names, Params):
 
         # Change header if changing output lines for gene or codon
         header_gene = 'Chr\tExon\tNo_of_exons\tStrand\tGene_id_treated\tgene_1_leftmost\tgene_1_rigthmost\tu_rpm_1'
-        header_codon = 'Position_leftmost_1\tcodon_raw_1\tcodon_rpm_1\tcodon_relative_rpm_1\tcodon_P_1\tnorm_factor_1'
-        header_codon += '\tamplification_factor_1'
+        header_codon = 'Position_leftmost_1\tcodon_raw_1\tcodon_rpm_1\tcodon_relative_rpm_1\tcodon_E_1\tcodon_P_1\tcodon_A_1'  # A
+        header_codon += '\tnorm_factor_1\tamplification_factor_1'
+        #header_codon = 'Position_leftmost_1\tcodon_raw_1\tcodon_rpm_1\tcodon_relative_rpm_1\tcodon_P_1\tnorm_factor_1'    # A orig
+        #header_codon += '\tamplification_factor_1'
         header = header_gene + "\t" + header_codon + "\n"
 
         outfile.write(header)
@@ -651,12 +653,15 @@ def codonTablesA(SRAList, Names, Params):
                             codon_raw = int(codon_rpm * norm_factor) # raw calculated from rpm - original raw is gone
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
-                            codon_P = genome[ref][iPl:iPl + 3]
+                            # Special case when E-site is empty
+                            codon_E = np.nan if iPl == left_most else genome[ref][iPl - 3:iPl]
+                            codon_P = genome[ref][iPl:iPl + 3]  # P site
+                            codon_A = genome[ref][iPl + 3:iPl + 6]  # A site
 
-                            line_for_codon = "{}\t{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(iPl), codon_raw,
+                            line_for_codon = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(iPl), codon_raw,
                                                                                      codon_rpm, codon_relative_rpm,
-                                                                                     codon_P, gene_norm_factor,
-                                                                                     amplification_factor)
+                                                                                     codon_E,codon_P,codon_A,
+                                                                                     gene_norm_factor,amplification_factor)
 
                             line_to_add = line_for_gene + "\t" + line_for_codon + "\n"
                             outfile.write(line_to_add)
@@ -695,11 +700,14 @@ def codonTablesA(SRAList, Names, Params):
                             codon_raw = int(codon_rpm * norm_factor)
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
-                            codon_P = genome[ref][iPl:iPl + 3]
-                            codon_P = revcompl(codon_P)
-                            line_for_codon = "{}\t{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(iPl), codon_raw,
+                            # Get sequences
+                            codon_E = np.nan if iPl + 3 == right_most else revcompl(genome[ref][iPl + 3:iPl + 6])  # E site
+                            codon_P = revcompl(genome[ref][iPl:iPl + 3])  # P site
+                            codon_A = revcompl(genome[ref][iPl - 3:iPl])  # A site
+
+                            line_for_codon = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(iPl), codon_raw,
                                                                                      codon_rpm, codon_relative_rpm,
-                                                                                     codon_P,
+                                                                                     codon_E, codon_P, codon_A,
                                                                                      gene_norm_factor,
                                                                                      amplification_factor)
 
