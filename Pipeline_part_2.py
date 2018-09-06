@@ -23,6 +23,10 @@ mpl.use('Agg')      # load backend - server safe
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# comments
+# 13.Aug 2018
+# u_rpm & ub_rpm is now calculated correctly from df with interval index
+#
 
 def cleanFile(File, Condition):
     # gZip a file and delete the un-gZipped version!
@@ -584,7 +588,7 @@ def codonTablesA(SRAList, Names, Params):
         ###############################
 
         # Change header if changing output lines for gene or codon
-        header_gene = 'Chr\tExon\tNo_of_exons\tStrand\tGene_id_treated\tgene_1_leftmost\tgene_1_rigthmost\tu_rpm_1'
+        header_gene = 'Chr\tExon\tNo_of_exons\tStrand\tGene_id_treated\tgene_1_leftmost\tgene_1_rigthmost\tu_rpm_1\tub_rpm_1'
         header_codon = 'Position_leftmost_1\tcodon_raw_1\tcodon_rpm_1\tcodon_relative_rpm_1\tcodon_E_1\tcodon_P_1\tcodon_A_1'  # A
         header_codon += '\tnorm_factor_1\tamplification_factor_1'
         #header_codon = 'Position_leftmost_1\tcodon_raw_1\tcodon_rpm_1\tcodon_relative_rpm_1\tcodon_P_1\tnorm_factor_1'    # A orig
@@ -603,7 +607,7 @@ def codonTablesA(SRAList, Names, Params):
             for gtf in tabixfile.fetch(reference=ref, start=0, end=None):
 
                 if gtf.feature == 'CDS':
-                    #todo: introduce  multiexon genes
+                    #todo: add  multiexon genes
                     if gene_ids_exon_No[gtf.gene_id] > 1:  # Skip 2 and more exon genes
                         continue
 
@@ -626,11 +630,22 @@ def codonTablesA(SRAList, Names, Params):
                                                                        column='sum', method='mean')
 
                         norm_factors_coll = tuple([x if x > 0 else np.nan for x in collection])  # repl 0 with nan
-                        u_rpm = gene_df["sum"].mean()
-                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
-                                                                                str(gene_ids_exon_No[gtf.gene_id]),
-                                                                                gtf.strand, gtf.gene_id,
-                                                                                left_most, right_most + 3, u_rpm)
+
+                        # --------------- #
+                        #  Line_for_gene  #
+                        #### Chr; Exon; No_of_exons; Strand; Gene_id_treated; gleft_most; rigth_most
+                        # Changing here update codonBased_df columns !!!
+                        s_rpm = gene_df["sum"].sum()  # interval data use .sum()/gene_length
+                        sb_rpm = gene_df[33:-33]["sum"].sum()  # gene body .sum()
+                        u_rpm = s_rpm / (right_most - left_most)  # interval data use .sum()/gene_length
+                        ub_rpm = sb_rpm / (right_most - left_most - 66)  # interval data use .sum()/gene_length
+
+                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
+                                                                                    str(gene_ids_exon_No[gtf.gene_id]),
+                                                                                    gtf.strand, gtf.gene_id,
+                                                                                    left_most, right_most + 3,
+                                                                                    u_rpm, ub_rpm)
+
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
 
@@ -673,13 +688,20 @@ def codonTablesA(SRAList, Names, Params):
                                                                        column='sum', method='mean')
 
                         norm_factors_coll = tuple([x if x > 0 else np.nan for x in collection])  # repl 0 with nan
-                        u_rpm = gene_df["sum"].mean()
-                        # todo: consider be consistent taking only CDS and not including STOP codon? left_most-3
-                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
-                                                                                str(gene_ids_exon_No[gtf.gene_id]),
-                                                                                gtf.strand, gtf.gene_id,
-                                                                                left_most - 3, right_most, u_rpm)
+                        # --------------- #
+                        #  Line_for_gene  #
+                        #### Chr; Exon; No_of_exons; Strand; Gene_id_treated; gleft_most; rigth_most
+                        # Changing here update codonBased_df columns !!!
+                        s_rpm  = gene_df["sum"].sum()  # interval data use .sum()/gene_length
+                        sb_rpm = gene_df[33:-33]["sum"].sum()  # gene body .sum()
+                        u_rpm  = s_rpm / (right_most - left_most) # interval data use .sum()/gene_length
+                        ub_rpm = sb_rpm / (right_most - left_most - 66) # interval data use .sum()/gene_length
 
+                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
+                                                                                    str(gene_ids_exon_No[gtf.gene_id]),
+                                                                                        gtf.strand, gtf.gene_id,
+                                                                                        left_most -3 , right_most,
+                                                                                        u_rpm, ub_rpm)
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
 
@@ -806,7 +828,8 @@ def codonTablesB(SRAList, Names, Params):
         LOGFILE.write(report + "\n"); print(report + "\n")
 
         # Change header if changing output lines for gene or codon
-        header_gene = 'Chr\tExon\tNo_of_exons\tStrand\tGene_id_WT\ttranscript_name\tgene_2_leftmost\tgene_2_rigthmost\tu_rpm_2'
+        header_gene = 'Chr\tExon\tNo_of_exons\tStrand\tGene_id_WT\ttranscript_name\tgene_2_leftmost\tgene_2_rigthmost'
+        header_gene += '\tu_rpm_2\tub_rpm_2'
         header_codon = 'Position_leftmost_2\tcodon_raw_2\tcodon_rpm_2\tcodon_relative_rpm_2\tcodon_E\tcodon_P\tcodon_A\t'
         header_codon = header_codon + 'sequence\treverse_complement\tpeptide\tnorm_factor_2\tamplification_factor_2'
         header = header_gene + "\t" + header_codon + "\n"
@@ -849,12 +872,15 @@ def codonTablesB(SRAList, Names, Params):
                         #  Line_for_gene  #
                         #### Chr; Exon; No_of_exons; Strand; Gene_id_treated; gleft_most; rigth_most
                         # Changing here update codonBased_df columns !!!
-                        u_rpm = gene_df["sum"].mean()
-                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
+                        s_rpm  = gene_df["sum"].sum() # todo: likly bug in interval data. insted .sum()/gene_length
+                        sb_rpm = gene_df[33:-33]["sum"].sum() # gene body rpm mean # todo: insted .sum()/gene_length
+                        u_rpm  = s_rpm/(right_most-left_most)
+                        ub_rpm = sb_rpm/(right_most-left_most-66)
+                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
                                                                                     str(gene_ids_exon_No[gtf.gene_id]),
                                                                                     gtf.strand, gtf.gene_id,
                                                                                     gtf.transcript_name,
-                                                                                    left_most, right_most+3, u_rpm)
+                                                                                    left_most, right_most+3, u_rpm, ub_rpm)
                         # -------------------------------------------------------- #
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
@@ -895,7 +921,7 @@ def codonTablesB(SRAList, Names, Params):
 
                             # ---------------- #
                             #  Line_for_codon  #
-                            line_for_codon = "{}\t{}\t{}\t{}\t".format(int(iPl), codon_raw, codon_rpm,
+                            line_for_codon  = "{}\t{}\t{}\t{}\t".format(int(iPl), codon_raw, codon_rpm,
                                                                        codon_relative_rpm)
                             line_for_codon += "{}\t{}\t{}\t{}\t{}\t{}\t{}".format(codon_E, codon_P, codon_A, sequence,
                                                                                   revcomp, translation, gene_norm_factor)
@@ -916,13 +942,21 @@ def codonTablesB(SRAList, Names, Params):
                                                                        column='sum', method='mean')
 
                         norm_factors_coll = tuple([x if x > 0 else np.nan for x in collection])  # repl 0 with nan
-                        u_rpm = gene_df["sum"].mean()
-                        # todo: consider be consistent taking only CDS and not including STOP codon? left_most-3
-                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
-                                                                        str(gene_ids_exon_No[gtf.gene_id]),
-                                                                        gtf.strand, gtf.gene_id, gtf.transcript_name)
 
-                        line_for_gene += "\t{}\t{}\t{}".format(left_most - 3, right_most, u_rpm)
+                        # --------------- #
+                        #  Line_for_gene  #
+                        #### Chr; Exon; No_of_exons; Strand; Gene_id_treated; gleft_most; rigth_most
+                        # Changing here update codonBased_df columns !!!
+                        s_rpm  = gene_df["sum"].sum() # gene  sum
+                        sb_rpm = gene_df[33:-33]["sum"].sum() # gene body sum
+                        u_rpm  = s_rpm/(right_most-left_most)
+                        ub_rpm = sb_rpm/(right_most-left_most-66)
+                        line_for_gene = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(gtf.contig, gtf.exon_number,
+                                                                                    str(gene_ids_exon_No[gtf.gene_id]),
+                                                                                    gtf.strand, gtf.gene_id,
+                                                                                    gtf.transcript_name,
+                                                                                    left_most - 3, right_most,
+                                                                                    u_rpm, ub_rpm)
 
                         # For each coding codon on gene, i. e. excluding STOP codon
                         for iPl in range(left_most, right_most, 3):
@@ -947,7 +981,6 @@ def codonTablesB(SRAList, Names, Params):
                             codon_raw = int(codon_rpm * norm_factor)
                             codon_relative_rpm = codon_rpm / gene_norm_factor
 
-                            line_for_codon = "{}\t{}\t{}\t{}\t".format(int(iPl), codon_raw, codon_rpm, codon_relative_rpm)
                             # Get sequences
                             codon_E = np.nan if iPl + 3 == right_most else revcompl(genome[ref][iPl + 3:iPl + 6])  # E site
                             codon_P = revcompl(genome[ref][iPl:iPl + 3])  # P site
@@ -963,8 +996,10 @@ def codonTablesB(SRAList, Names, Params):
 
                             # ---------------- #
                             #  Line_for_codon  #
+                            line_for_codon  = "{}\t{}\t{}\t{}\t".format(int(iPl), codon_raw, codon_rpm,
+                                                                       codon_relative_rpm)
                             line_for_codon += "{}\t{}\t{}\t{}\t{}\t{}\t{}".format(codon_E, codon_P, codon_A, sequence,
-                                                                                  seqrevcomp, translation, gene_norm_factor)
+                                                                            seqrevcomp, translation, gene_norm_factor)
                             line_for_codon += "\t{:.3f}".format(amplification_factor)
 
                             line_to_add = line_for_gene + "\t" + line_for_codon + "\n"
@@ -1121,7 +1156,7 @@ def masterTable(SRAList, Names, Params):
         print(report); LOGFILE.write(report + "\n")
 
         final_df.to_csv(outfile_csv, sep='\t')
-        report = "\t{}\nCodons included {:>10,}".format(outfile_cleaned_csv, final_df.shape[0])
+        report = "\t{}\nCodons included {:>10,}".format(outfile_csv, final_df.shape[0])
         print(report); LOGFILE.write(report + "\n")
 
         ## do some cleaning
