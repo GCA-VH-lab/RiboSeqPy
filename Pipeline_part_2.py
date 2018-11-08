@@ -168,7 +168,7 @@ def corrAssignment(SRAList, Names, Params):
 
             # 5.3 apply offset correction
             # 5' OK!
-            # todo: 3' mapping corrrection
+            # todo: 3' mapping corrrection - can be done using negative values for correction
             for rlen in [str(i) for i in rl_l]:
                 df1[rlen] = df1[rlen].shift(readlen_and_offsets[int(rlen)])
 
@@ -247,6 +247,7 @@ def metagTables2(SRAList, Names, Params):
     for iN in Names:
         cf1 = cr1 = cf2 = cr2 = 0  # counters
         report = "\nName: {}".format(iN)
+        report+= "\nMetagene normalisation is turned ON: each gene contributes equally!"
         LOG_FILE.write(report + "\n"); print(report)
 
         # todo: input file name construction relies on offset table. Is it good or bad? What could bemore robust way?
@@ -256,8 +257,8 @@ def metagTables2(SRAList, Names, Params):
         fn_body+= str(min(rl_l)) + "-" + str(max(rl_l))  #
 
         # file names
-        outf_start = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Start" + "_iv_Meta_Sum.txt"
-        outf_stop = "10-corrMetagTbl/" + fn_body + "_" + dataNorm + "_Stop" + "_iv_Meta_Sum.txt"
+        outf_start = "10-corrMetagTbl/" + fn_body + "_Norm-unitless_Start_iv_Meta_Sum.txt"
+        outf_stop = "10-corrMetagTbl/" + fn_body + "_Norm-unitless_Stop_iv_Meta_Sum.txt"
         infile_h5 = "9-Assigncorr/" + fn_body + "_idx_iv_assign_rpm.h5"
         # corrected assignment
         hd5 = pd.HDFStore(infile_h5, "r")
@@ -310,6 +311,7 @@ def metagTables2(SRAList, Names, Params):
                     else:
                         df = df_f.loc[gtf.start - Span:gtf.start + Span, :]
 
+                    df = df_normalise(df, column="sum")  # normalises df sum of sum = 1 -> each gene contributes equally
                     index = range(gtf.start - Span, gtf.start + Span + 1)
                     # def df_framing() fills missing positions in idex with 0 - makes it interval safe
                     df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
@@ -325,6 +327,7 @@ def metagTables2(SRAList, Names, Params):
                     else:
                         df = df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1]
 
+                    df = df_normalise(df, column="sum")  # normalises df sum of sum = 1 -> each gene contributes equally
                     index = range(gtf.end - Span - 1, gtf.end + Span)  # -1 correction
                     df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
                     meta_stop_dfr = meta_stop_dfr + df  # sum dataframes
@@ -339,6 +342,7 @@ def metagTables2(SRAList, Names, Params):
                     else:
                         df = df_f.loc[gtf.start - Span:gtf.start + Span, :]
 
+                    df = df_normalise(df, column="sum")  # normalises df sum of sum = 1 -> each gene contributes equally
                     index = range(gtf.start - Span, gtf.start + Span + 1)
                     df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
                     meta_start_dff = meta_start_dff + df  # sum dataframes
@@ -352,7 +356,7 @@ def metagTables2(SRAList, Names, Params):
                         continue
                     else:
                         df = df_r.loc[gtf.end - Span - 1:gtf.end + Span - 1]  # -1 correction for rev strand
-
+                    df = df_normalise(df, column="sum")  # normalises df sum of sum = 1 -> each gene contributes equally
                     index = range(gtf.end - Span - 1, gtf.end + Span)  # -1 correction for rev strand
                     df = df_framing(df, index=index, columns=columns, strand=gtf.strand)  # expanded & index resetted df
                     meta_start_dfr = meta_start_dfr + df  # sum dataframes
@@ -423,9 +427,9 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
 
         for iX in ["Start", "Stop"]:
             infile = "10-corrMetagTbl/" + iN + "_" + Mapping + "-End" + "_" + rlrange + \
-                     "_" + dataNorm + "_" + iX + "_iv_Meta_Sum.txt"
+                     "_Norm-unitless_" + iX + "_iv_Meta_Sum.txt"
             outfig = "10-corrMetagTbl/MetagPlot/" + iN + "-" + Mapping + "-End" + "-" + rlrange + \
-                     "-" + dataNorm + "-" + iX + "-iv.pdf"
+                     "_Norm-unitless_" + iX + ".pdf"
 
             outfig_title    = "{} {} {}' mapping".format(iN.replace('_', '-'), iX, Mapping )
             legend_location = 'upper right' if iX == 'Stop' else 'upper left'
@@ -493,8 +497,8 @@ def metagPlotsCorrpdf(SRAList, Names, Params):
                         # any other type of mapping
                         pass
 
-                    axes[i].set_ylabel(Params["Normalised"])
-
+                    #axes[i].set_ylabel(Params["Normalised"])
+                    axes[i].set_ylabel("RS density")  # unitless - each gene contributes equally
                 sns.despine()  # seaborn_aesthetic
                 fig.savefig(outfig, format='pdf', dpi=300, bbox_inches='tight')
                 print("{}".format(outfig))
@@ -1245,6 +1249,9 @@ def df_framing(df1, index, columns, strand="+"):
     else:
         # error
         print("ERROR! Expext '+'/'-' but found {} for strand".format(strand))
+
+def df_normalise(df, column="sum"):
+    return df/df[column].sum()
 
 def dfTrimmiX5(df, Span, iX, inside_gene=33, outside_gene=18):
     """Truncates Data Frame to fit in figure 5pr """
